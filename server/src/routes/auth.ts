@@ -7,6 +7,8 @@ import {
 } from '../controllers/authController'
 import bcrypt from 'bcrypt'
 import User from '../model/User'
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20'
+import { Strategy as FacebookStrategy } from 'passport-facebook'
 
 const router = Router()
 
@@ -67,55 +69,53 @@ router.post('/signup', async (req: Request, res: Response) => {
   }
 })
 
-router.post('/login', async (req: Request, res: Response) => {
-  try {
-    const { email, password } = req.body
+// router.post('/login', async (req: Request, res: Response) => {
+//   try {
+//     const { email, password } = req.body
 
-    // Find user by email
-    const user = await User.findOne({ email })
-    if (!user) {
-      return res.status(401).json({ message: 'Invalid email or password' })
-    }
+//     // Find user by email
+//     const user = await User.findOne({ email })
+//     if (!user) {
+//       return res.status(401).json({ message: 'Invalid email or password' })
+//     }
 
-    // Check if user has a password (local user)
-    if (!user.password) {
-      return res
-        .status(401)
-        .json({
-          message:
-            'This account was created with social login. Please use social login instead.',
-        })
-    }
+//     // Check if user has a password (local user)
+//     if (!user.password) {
+//       return res.status(401).json({
+//         message:
+//           'This account was created with social login. Please use social login instead.',
+//       })
+//     }
 
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(password, user.password)
-    if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Invalid email or password' })
-    }
+//     // Verify password
+//     const isPasswordValid = await bcrypt.compare(password, user.password)
+//     if (!isPasswordValid) {
+//       return res.status(401).json({ message: 'Invalid email or password' })
+//     }
 
-    // Log in the user
-    req.login(user, (err) => {
-      if (err) {
-        return res.status(500).json({ message: 'Login failed' })
-      }
-      res.json({
-        message: 'Login successful',
-        user: {
-          id: user._id,
-          email: user.email,
-          name: user.name,
-          age: user.age,
-          gender: user.gender,
-          location: user.location,
-          provider: user.provider,
-        },
-      })
-    })
-  } catch (error) {
-    console.error('Login error:', error)
-    res.status(500).json({ message: 'Internal server error during login' })
-  }
-})
+//     // Log in the user
+//     req.login(user, (err) => {
+//       if (err) {
+//         return res.status(500).json({ message: 'Login failed' })
+//       }
+//       res.json({
+//         message: 'Login successful',
+//         user: {
+//           id: user._id,
+//           email: user.email,
+//           name: user.name,
+//           age: user.age,
+//           gender: user.gender,
+//           location: user.location,
+//           provider: user.provider,
+//         },
+//       })
+//     })
+//   } catch (error) {
+//     console.error('Login error:', error)
+//     res.status(500).json({ message: 'Internal server error during login' })
+//   }
+// })
 
 // Google OAuth routes
 router.get(
@@ -130,7 +130,7 @@ router.get(
     if (user) {
       // Redirect to frontend with user data
       const redirectUrl =
-        `${process.env.CLIENT_URL}/auth/callback?` +
+        `${process.env.FRONTEND_URL}/auth/callback?` +
         `email=${encodeURIComponent(user.email)}` +
         `&name=${encodeURIComponent(user.name)}` +
         `&picture=${encodeURIComponent(user.picture || '')}` +
@@ -138,7 +138,7 @@ router.get(
         `&providerId=${encodeURIComponent(user.providerId)}`
       res.redirect(redirectUrl)
     } else {
-      res.redirect(`${process.env.CLIENT_URL}/login?error=auth_failed`)
+      res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`)
     }
   }
 )
@@ -153,7 +153,7 @@ router.get(
     if (user) {
       // Redirect to frontend with user data
       const redirectUrl =
-        `${process.env.CLIENT_URL}/auth/callback?` +
+        `${process.env.FRONTEND_URL}/auth/callback?` +
         `email=${encodeURIComponent(user.email)}` +
         `&name=${encodeURIComponent(user.name)}` +
         `&picture=${encodeURIComponent(user.picture || '')}` +
@@ -161,7 +161,7 @@ router.get(
         `&providerId=${encodeURIComponent(user.providerId)}`
       res.redirect(redirectUrl)
     } else {
-      res.redirect(`${process.env.CLIENT_URL}/login?error=auth_failed`)
+      res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`)
     }
   }
 )

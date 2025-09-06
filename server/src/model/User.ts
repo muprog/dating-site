@@ -10,6 +10,8 @@ export interface IUser extends Document {
   age?: number
   gender?: 'male' | 'female' | 'other'
   location?: string
+  resetPasswordOTP?: string | null
+  resetPasswordOTPExpires: Date | null
   createdAt: Date
   updatedAt: Date
 }

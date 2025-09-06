@@ -173,6 +173,14 @@ router.post('/login', async (req: Request, res: Response) => {
     if (!user) {
       return res.status(400).json({ message: 'Invalid email or password' })
     }
+    if (user.provider !== 'local' || !user.password) {
+      return res
+        .status(400)
+        .json({
+          message:
+            'This account uses social login. Please log in with Google or Facebook.',
+        })
+    }
 
     const isMatch = await bcrypt.compare(password, user.password)
     if (!isMatch) {

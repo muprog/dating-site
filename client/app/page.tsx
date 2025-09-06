@@ -148,7 +148,7 @@ export default function HomePage() {
               </Link>
             ) : (
               <Link
-                href='/login'
+                href='/register'
                 className='px-6 py-3 rounded-full bg-pink-600 hover:bg-pink-700 transition shadow-lg text-white font-semibold text-lg cursor-pointer button-animated'
               >
                 Get Started
