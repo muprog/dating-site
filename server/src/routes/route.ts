@@ -1,9 +1,10 @@
 import multer from 'multer'
 import bcrypt from 'bcryptjs'
-import User from '../model/User'
+import User, { IUser } from '../model/User'
 import PendingUser from '../model/PendingUser'
 import { Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
+import authMiddleware from '../middleWare/authMiddleware'
 const express = require('express')
 const router = express.Router()
 const { test, registerUser } = require('../controllers/controller')
@@ -70,19 +71,90 @@ router.post(
 )
 
 // New: initiate registration -> generate OTP and send email
+// router.post(
+//   'api/auth/register/initiate',
+//   upload.single('profilePhoto'),
+//   async (req: Request, res: Response) => {
+//     try {
+//       const { name, email, password, age, gender, location } = req.body
+
+//       if (Number(age) < 0)
+//         return res.status(400).json({ message: 'Age cannot be below zero' })
+
+//       const existing = await User.findOne({ email })
+//       if (existing)
+//         return res.status(400).json({ message: 'Email already registered' })
+
+//       // Generate 6-digit OTP and expiry
+//       const otp = Math.floor(100000 + Math.random() * 900000).toString()
+//       const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000)
+
+//       const hashed = await bcrypt.hash(password, 10)
+
+//       // Upsert pending user for this email
+//       const pending = await PendingUser.findOneAndUpdate(
+//         { email },
+//         {
+//           name,
+//           email,
+//           password: hashed,
+//           age: Number(age),
+//           gender,
+//           location,
+//           profilePhoto: req.file ? req.file.path : undefined,
+//           otp,
+//           otpExpiresAt,
+//         },
+//         { upsert: true, new: true }
+//       )
+
+//       // Send OTP email
+//       const mailFrom = process.env.SMTP_USER
+//       await transporter.sendMail({
+//         from: mailFrom,
+//         to: email,
+//         subject: 'Your verification code',
+//         text: `Your OTP is ${otp}. It expires in 10 minutes.`,
+//         html: `<p>Your OTP is <b>${otp}</b>. It expires in 10 minutes.</p>`,
+//       })
+//       if (!pending) {
+//         return res.status(500).json({ message: 'Failed to createpending' })
+//       }
+//       res.status(200).json({
+//         message: 'OTP sent to your email',
+//         pendingUser: {
+//           id: pending._id,
+//           email: pending.email,
+//           name: pending.name,
+//         },
+//       })
+//     } catch (err: any) {
+//       console.error(err)
+//       res.status(500).json({ message: err.message || 'Server error' })
+//     }
+//   }
+// )
 router.post(
-  '/register/initiate',
+  '/api/auth/register/initiate', // 🔥 make sure to start with a leading slash
   upload.single('profilePhoto'),
   async (req: Request, res: Response) => {
     try {
       const { name, email, password, age, gender, location } = req.body
 
-      if (Number(age) < 0)
+      if (Number(age) < 0) {
         return res.status(400).json({ message: 'Age cannot be below zero' })
+      }
 
       const existing = await User.findOne({ email })
-      if (existing)
+      if (existing) {
         return res.status(400).json({ message: 'Email already registered' })
+      }
+
+      // ❌ optional: check if a pending user already exists
+      const existingPending = await PendingUser.findOne({ email })
+      if (existingPending) {
+        await PendingUser.deleteOne({ email }) // remove old pending if you want strict "always fresh"
+      }
 
       // Generate 6-digit OTP and expiry
       const otp = Math.floor(100000 + Math.random() * 900000).toString()
@@ -90,25 +162,21 @@ router.post(
 
       const hashed = await bcrypt.hash(password, 10)
 
-      // Upsert pending user for this email
-      await PendingUser.findOneAndUpdate(
-        { email },
-        {
-          name,
-          email,
-          password: hashed,
-          age: Number(age),
-          gender,
-          location,
-          profilePhoto: req.file ? req.file.path : undefined,
-          otp,
-          otpExpiresAt,
-        },
-        { upsert: true, new: true }
-      )
+      // ✅ Create new pending user
+      const pending = await PendingUser.create({
+        name,
+        email,
+        password: hashed,
+        age: Number(age),
+        gender,
+        location,
+        profilePhoto: req.file ? req.file.path : undefined,
+        otp,
+        otpExpiresAt,
+      })
 
       // Send OTP email
-      const mailFrom = process.env.MAIL_FROM || process.env.SMTP_USER
+      const mailFrom = process.env.SMTP_USER
       await transporter.sendMail({
         from: mailFrom,
         to: email,
@@ -117,7 +185,14 @@ router.post(
         html: `<p>Your OTP is <b>${otp}</b>. It expires in 10 minutes.</p>`,
       })
 
-      res.status(200).json({ message: 'OTP sent to your email' })
+      res.status(201).json({
+        message: 'OTP sent to your email',
+        pendingUser: {
+          id: pending._id,
+          email: pending.email,
+          name: pending.name,
+        },
+      })
     } catch (err: any) {
       console.error(err)
       res.status(500).json({ message: err.message || 'Server error' })
@@ -126,38 +201,45 @@ router.post(
 )
 
 // New: verify OTP and create user
-router.post('/register/verify', async (req: Request, res: Response) => {
-  try {
-    const { email, otp } = req.body as { email: string; otp: string }
+router.post(
+  '/api/auth/register/verify',
+  async (req: Request, res: Response) => {
+    try {
+      const { email, otp } = req.body as { email: string; otp: string }
 
-    const pending = await PendingUser.findOne({ email })
-    if (!pending)
-      return res.status(400).json({ message: 'No pending registration found' })
+      const pending = await PendingUser.findOne({ email })
+      if (!pending)
+        return res
+          .status(400)
+          .json({ message: 'No pending registration found' })
 
-    if (pending.otp !== otp)
-      return res.status(400).json({ message: 'Invalid OTP' })
+      if (pending.otp !== otp)
+        return res.status(400).json({ message: 'Invalid OTP' })
 
-    if (pending.otpExpiresAt.getTime() < Date.now())
-      return res.status(400).json({ message: 'OTP expired' })
+      if (pending.otpExpiresAt.getTime() < Date.now())
+        return res.status(400).json({ message: 'OTP expired' })
 
-    const user = new User({
-      name: pending.name,
-      email: pending.email,
-      password: pending.password,
-      age: pending.age,
-      gender: pending.gender,
-      location: pending.location,
-      profilePhoto: pending.profilePhoto,
-    })
-    await user.save()
-    await PendingUser.deleteOne({ _id: pending._id })
+      const user = new User({
+        name: pending.name,
+        email: pending.email,
+        password: pending.password,
+        age: pending.age,
+        gender: pending.gender,
+        location: pending.location,
+        profilePhoto: pending.profilePhoto,
+        provider: 'local',
+        providerId: '',
+      })
+      await user.save()
+      await PendingUser.deleteOne({ _id: pending._id })
 
-    res.status(201).json({ user: { name: user.name, email: user.email } })
-  } catch (err: any) {
-    console.error(err)
-    res.status(500).json({ message: err.message || 'Server error' })
+      res.status(201).json({ user: { name: user.name, email: user.email } })
+    } catch (err: any) {
+      console.error(err)
+      res.status(500).json({ message: err.message || 'Server error' })
+    }
   }
-})
+)
 
 router.post('/login', async (req: Request, res: Response) => {
   try {
@@ -174,12 +256,10 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Invalid email or password' })
     }
     if (user.provider !== 'local' || !user.password) {
-      return res
-        .status(400)
-        .json({
-          message:
-            'This account uses social login. Please log in with Google or Facebook.',
-        })
+      return res.status(400).json({
+        message:
+          'This account uses social login. Please log in with Google or Facebook.',
+      })
     }
 
     const isMatch = await bcrypt.compare(password, user.password)
@@ -303,5 +383,47 @@ router.post('/reset-password', async (req: Request, res: Response) => {
     res.status(500).json({ message: err.message || 'Server error' })
   }
 })
+// ✅ GET profile
+router.get('/users/:id', async (req: Request, res: Response) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password')
+    if (!user) return res.status(404).json({ message: 'User not found' })
+    res.json({ user })
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' })
+  }
+})
 
+// ✅ UPDATE profile
+router.put(
+  '/users/:id',
+  upload.array('picture', 5),
+  async (req: Request, res: Response) => {
+    try {
+      const { name, age, gender, location, bio, interests } = req.body
+      const updateData: any = {
+        name,
+        age,
+        gender,
+        location,
+        bio,
+        interests: interests ? JSON.parse(interests) : [],
+      }
+
+      // Handle uploaded photos
+      if (req.files) {
+        const files = req.files as Express.Multer.File[]
+        updateData.photos = files.map((f) => `/uploads/${f.filename}`)
+      }
+
+      const user = await User.findByIdAndUpdate(req.params.id, updateData, {
+        new: true,
+      }).select('-password')
+
+      res.json({ user })
+    } catch (err) {
+      res.status(500).json({ message: 'Profile update failed' })
+    }
+  }
+)
 module.exports = router

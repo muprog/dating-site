@@ -1,23 +1,45 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
 // Types
+export interface pendingUser {
+  id?: string
+  email: string
+  name: string
+  provider: 'google' | 'facebook'
+  picture?: string
+  photos?: string[]
+  age?: string | number
+  gender?: 'male' | 'female' | 'other'
+  location?: string
+  bio?: string
+  interests?: string[]
+}
 export interface User {
   id: string
   email: string
   name: string
-  picture?: string
   provider: 'google' | 'facebook'
+  picture?: string
+  photos?: string[]
+  age?: string | number
+  gender?: 'male' | 'female' | 'other'
+  location?: string
+  bio?: string
+  interests?: string[]
 }
 
 export interface AuthState {
   user: User | null
+  pendingUser: pendingUser | null
   isAuthenticated: boolean
   loading: boolean
   error: string | null
+  otpPending?: boolean
 }
 
 const initialState: AuthState = {
   user: null,
+  pendingUser: null,
   isAuthenticated: false,
   loading: false,
   error: null,
@@ -29,6 +51,32 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     // Check auth status
+    // Signup
+    signupRequest: (
+      state,
+      action: PayloadAction<{
+        name: string
+        email: string
+        password: string
+        age: number
+        gender: string
+        location: string
+      }>
+    ) => {
+      state.loading = true
+      state.error = null
+    },
+    signupSuccess: (state, action: PayloadAction<User>) => {
+      state.loading = false
+      state.user = action.payload
+      state.isAuthenticated = true
+      state.error = null
+    },
+    signupFailure: (state, action: PayloadAction<string>) => {
+      state.loading = false
+      state.error = action.payload
+    },
+
     checkAuthStatusRequest: (state) => {
       state.loading = true
       state.error = null
@@ -117,6 +165,49 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null
     },
+    getProfileRequest: (state, action: PayloadAction<string>) => {
+      state.loading = true
+      state.error = null
+    },
+    getProfileSuccess: (state, action: PayloadAction<User>) => {
+      state.loading = false
+      state.user = action.payload
+    },
+    getProfileFailure: (state, action: PayloadAction<string>) => {
+      state.loading = false
+      state.error = action.payload
+    },
+    registerInitiateRequest: (state, action) => {
+      state.loading = true
+      state.error = null
+    },
+    registerInitiateSuccess: (state, action) => {
+      state.loading = false
+      state.error = null
+      state.pendingUser = action.payload
+    },
+    registerInitiateFailure: (state, action) => {
+      state.loading = false
+      state.error = action.payload
+    },
+
+    verifyOtpRequest: (
+      state,
+      action: PayloadAction<{ email: string; otp: string }>
+    ) => {
+      state.loading = true
+      state.error = null
+    },
+    verifyOtpSuccess: (state, action: PayloadAction<User>) => {
+      state.loading = false
+      state.user = action.payload
+      // state.isAuthenticated = true
+      state.otpPending = false
+    },
+    verifyOtpFailure: (state, action: PayloadAction<string>) => {
+      state.loading = false
+      state.error = action.payload
+    },
   },
 })
 
@@ -137,6 +228,18 @@ export const {
   clearUser,
   setError,
   clearError,
+  getProfileRequest,
+  getProfileSuccess,
+  getProfileFailure,
+  signupRequest,
+  signupSuccess,
+  signupFailure,
+  verifyOtpRequest,
+  verifyOtpSuccess,
+  verifyOtpFailure,
+  registerInitiateRequest,
+  registerInitiateSuccess,
+  registerInitiateFailure,
 } = authSlice.actions
 
 export default authSlice.reducer

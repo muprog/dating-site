@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express'
 import passport from '../config/auth'
+import { sendEmail } from '../utils/sendEmail'
 import {
   createOrUpdateUser,
   getUserProfile,
@@ -13,109 +14,147 @@ import { Strategy as FacebookStrategy } from 'passport-facebook'
 const router = Router()
 
 // Traditional Authentication Routes
-router.post('/signup', async (req: Request, res: Response) => {
-  try {
-    const { name, email, password, age, gender, location } = req.body
-
-    // Check if user already exists
-    const existingUser = await User.findOne({ email })
-    if (existingUser) {
-      return res
-        .status(400)
-        .json({ message: 'User already exists with this email' })
-    }
-
-    // Hash password
-    const saltRounds = 10
-    const hashedPassword = await bcrypt.hash(password, saltRounds)
-
-    // Create new user
-    const newUser = new User({
-      name,
-      email,
-      password: hashedPassword,
-      age,
-      gender,
-      location,
-      provider: 'local',
-      providerId: email, // Use email as providerId for local users
-    })
-
-    await newUser.save()
-
-    // Log in the user after successful signup
-    req.login(newUser, (err) => {
-      if (err) {
-        return res
-          .status(500)
-          .json({ message: 'Auto-login failed after signup' })
-      }
-      res.status(201).json({
-        message: 'User created successfully',
-        user: {
-          id: newUser._id,
-          email: newUser.email,
-          name: newUser.name,
-          age: newUser.age,
-          gender: newUser.gender,
-          location: newUser.location,
-          provider: newUser.provider,
-        },
-      })
-    })
-  } catch (error) {
-    console.error('Signup error:', error)
-    res.status(500).json({ message: 'Internal server error during signup' })
-  }
-})
-
-// router.post('/login', async (req: Request, res: Response) => {
+// router.post('/signup', async (req: Request, res: Response) => {
 //   try {
-//     const { email, password } = req.body
+//     const { name, email, password, age, gender, location } = req.body
 
-//     // Find user by email
-//     const user = await User.findOne({ email })
-//     if (!user) {
-//       return res.status(401).json({ message: 'Invalid email or password' })
+//     // Check if user already exists
+//     const existingUser = await User.findOne({ email })
+//     if (existingUser) {
+//       return res
+//         .status(400)
+//         .json({ message: 'User already exists with this email' })
 //     }
 
-//     // Check if user has a password (local user)
-//     if (!user.password) {
-//       return res.status(401).json({
-//         message:
-//           'This account was created with social login. Please use social login instead.',
-//       })
-//     }
+//     // Hash password
+//     const saltRounds = 10
+//     const hashedPassword = await bcrypt.hash(password, saltRounds)
 
-//     // Verify password
-//     const isPasswordValid = await bcrypt.compare(password, user.password)
-//     if (!isPasswordValid) {
-//       return res.status(401).json({ message: 'Invalid email or password' })
-//     }
+//     // Create new user
+//     const newUser = new User({
+//       name,
+//       email,
+//       password: hashedPassword,
+//       age,
+//       gender,
+//       location,
+//       provider: 'local',
+//       providerId: email, // Use email as providerId for local users
+//     })
 
-//     // Log in the user
-//     req.login(user, (err) => {
+//     await newUser.save()
+
+//     // Log in the user after successful signup
+//     req.login(newUser, (err) => {
 //       if (err) {
-//         return res.status(500).json({ message: 'Login failed' })
+//         return res
+//           .status(500)
+//           .json({ message: 'Auto-login failed after signup' })
 //       }
-//       res.json({
-//         message: 'Login successful',
+//       res.status(201).json({
+//         message: 'User created successfully',
 //         user: {
-//           id: user._id,
-//           email: user.email,
-//           name: user.name,
-//           age: user.age,
-//           gender: user.gender,
-//           location: user.location,
-//           provider: user.provider,
+//           id: newUser._id,
+//           email: newUser.email,
+//           name: newUser.name,
+//           age: newUser.age,
+//           gender: newUser.gender,
+//           location: newUser.location,
+//           provider: newUser.provider,
 //         },
 //       })
 //     })
 //   } catch (error) {
-//     console.error('Login error:', error)
-//     res.status(500).json({ message: 'Internal server error during login' })
+//     console.error('Signup error:', error)
+//     res.status(500).json({ message: 'Internal server error during signup' })
 //   }
 // })
+
+router.post('/signup', async (req: Request, res: Response) => {
+  try {
+    const { name, email, password } = req.body
+
+    let user = await User.findOne({ email })
+    if (user && user.isVerified) {
+      return res.status(400).json({ message: 'User already exists' })
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10)
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString()
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000) // 10 min
+
+    if (!user) {
+      user = new User({
+        name,
+        email,
+        password: hashedPassword,
+        otp,
+        otpExpires,
+      })
+    } else {
+      user.password = hashedPassword
+      user.otp = otp
+      user.otpExpires = otpExpires
+    }
+
+    await user.save()
+
+    await sendEmail(user.email, 'verify your account', `Your OTP is ${otp}`)
+
+    res.status(200).json({ message: 'OTP sent to email. Please verify.' })
+  } catch (err) {
+    res.status(500).json({ message: 'Signup failed' })
+  }
+})
+
+router.post('/login', async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body
+
+    // Find user by email
+    const user = await User.findOne({ email })
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid email or password' })
+    }
+
+    // Check if user has a password (local user)
+    if (!user.password) {
+      return res.status(401).json({
+        message:
+          'This account was created with social login. Please use social login instead.',
+      })
+    }
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.password)
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Invalid email or password' })
+    }
+
+    // Log in the user
+    req.login(user, (err) => {
+      if (err) {
+        return res.status(500).json({ message: 'Login failed' })
+      }
+      res.json({
+        message: 'Login successful',
+        user: {
+          id: user._id,
+          email: user.email,
+          name: user.name,
+          age: user.age,
+          gender: user.gender,
+          location: user.location,
+          provider: user.provider,
+        },
+      })
+    })
+  } catch (error) {
+    console.error('Login error:', error)
+    res.status(500).json({ message: 'Internal server error during login' })
+  }
+})
 
 // Google OAuth routes
 router.get(

@@ -4,6 +4,7 @@ export interface IUser extends Document {
   email: string
   name: string
   picture?: string
+  photos?: (string | File)[]
   provider: 'google' | 'facebook' | 'local'
   providerId: string
   password?: string // For local authentication
@@ -12,6 +13,9 @@ export interface IUser extends Document {
   location?: string
   resetPasswordOTP?: string | null
   resetPasswordOTPExpires: Date | null
+  otp?: string | null
+  otpExpires?: Date | null
+  isVerified?: boolean
   createdAt: Date
   updatedAt: Date
 }
@@ -29,6 +33,11 @@ const userSchema = new Schema<IUser>(
     },
     picture: {
       type: String,
+      default: '',
+    },
+    photos: {
+      type: [String || File],
+      default: [],
     },
     provider: {
       type: String,
@@ -37,7 +46,9 @@ const userSchema = new Schema<IUser>(
     },
     providerId: {
       type: String,
-      required: true,
+      required: function () {
+        return this.provider !== 'local' // only required if provider is NOT local
+      },
     },
     password: {
       type: String,
@@ -58,6 +69,9 @@ const userSchema = new Schema<IUser>(
     location: {
       type: String,
     },
+    otp: { type: String, default: null },
+    otpExpires: { type: Date, default: null },
+    isVerified: { type: Boolean, default: false },
   },
   {
     timestamps: true,

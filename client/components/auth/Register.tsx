@@ -17,7 +17,7 @@ import Link from 'next/link'
 import { useDispatch } from 'react-redux'
 import { checkAuthStatusRequest } from '../../store/auth/authSlice'
 import { useRouter } from 'next/navigation'
-
+import { registerInitiateRequest } from '../../store/auth/authSlice'
 const Register: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -43,7 +43,6 @@ const Register: React.FC = () => {
       ...prev,
       [name]: value,
     }))
-    // Clear error when user starts typing
     if (error) setError('')
   }
 
@@ -56,17 +55,14 @@ const Register: React.FC = () => {
   const handleTraditionalSignup = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Validation
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match!')
       return
     }
-
     if (formData.password.length < 6) {
       setError('Password must be at least 6 characters long!')
       return
     }
-
     if (Number(formData.age) < 18) {
       setError('You must be at least 18 years old to register!')
       return
@@ -76,37 +72,36 @@ const Register: React.FC = () => {
     setError('')
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/signup`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify({
-            name: formData.name,
-            email: formData.email,
-            password: formData.password,
-            age: Number(formData.age),
-            gender: formData.gender,
-            location: formData.location,
-          }),
-        }
+      // Build FormData
+      const fd = new FormData()
+      fd.append('name', formData.name)
+      fd.append('email', formData.email)
+      fd.append('password', formData.password)
+      fd.append('age', formData.age)
+      fd.append('gender', formData.gender)
+      fd.append('location', formData.location)
+      console.log(fd)
+      // if you later add a profile photo
+      // if (profilePhotoFile) fd.append('profilePhoto', profilePhotoFile)
+
+      // dispatch(registerInitiateRequest(fd))
+      // Register.tsx
+      dispatch(
+        registerInitiateRequest({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          age: formData.age,
+          gender: formData.gender,
+          location: formData.location,
+          // don’t pass File or FormData here
+        })
       )
 
-      const data = await response.json()
-
-      if (response.ok) {
-        // Signup successful, check auth status and redirect
-        dispatch(checkAuthStatusRequest())
-        router.push('/profile')
-      } else {
-        setError(data.message || 'Signup failed')
-      }
-    } catch (error) {
-      console.error('Signup failed:', error)
-      setError('Network error. Please try again.')
+      router.push('/verify-otp')
+    } catch (err) {
+      console.error('Signup error:', err)
+      setError('Something went wrong. Please try again.')
     } finally {
       setIsLoading(false)
     }

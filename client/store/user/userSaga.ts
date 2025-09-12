@@ -1,11 +1,11 @@
 import { call, put, takeLatest } from 'redux-saga/effects'
 import axios from '../../util/axios'
 import {
-  registerRequest,
-  registerSuccess,
-  registerFailure,
-  registerInitiateSuccess,
-  registerVerifyRequest,
+  // registerRequest,
+  // registerSuccess,
+  // registerFailure,
+  // registerInitiateSuccess,
+  // registerVerifyRequest,
   loginSuccess,
   loginFailure,
   loginRequest,
@@ -18,6 +18,12 @@ import {
   checkAuthRequest,
   checkAuthSuccess,
   checkAuthFailure,
+  updateProfileRequest,
+  updateProfileSuccess,
+  updateProfileFailure,
+  getProfileRequest,
+  getProfileSuccess,
+  getProfileFailure,
 } from './userSlice'
 import { CallEffect, PutEffect } from 'redux-saga/effects'
 
@@ -30,42 +36,53 @@ function postRegisterInitiate(formData: FormData) {
 function postRegisterVerify(payload: { email: string; otp: string }) {
   return axios.post('/register/verify', payload)
 }
+function fetchProfile(userId: string) {
+  return axios.get(`/users/${userId}`, { withCredentials: true })
+}
+function putProfile(userId: string, updates: FormData) {
+  const isFormData =
+    typeof FormData !== 'undefined' && updates instanceof FormData
+  return axios.put(`/users/${userId}`, updates, {
+    headers: isFormData ? {} : { 'Content-Type': 'application/json' },
+    withCredentials: true,
+  })
+}
 
 // Step 1: initiate -> send OTP
-function* handleRegisterInitiate(
-  action: ReturnType<typeof registerRequest>
-): Generator<CallEffect<any> | PutEffect<any>, void, any> {
-  try {
-    const formData: FormData = action.payload
-    const email = (formData.get('email') as string) || ''
-    const response: any = yield call(postRegisterInitiate, formData)
-    yield put(
-      registerInitiateSuccess({ email, message: response.data.message })
-    )
-  } catch (err: any) {
-    yield put(
-      registerFailure(
-        err?.response?.data?.message || err.message || 'Registration failed'
-      )
-    )
-  }
-}
+// function* handleRegisterInitiate(
+//   action: ReturnType<typeof registerRequest>
+// ): Generator<CallEffect<any> | PutEffect<any>, void, any> {
+//   try {
+//     const formData: FormData = action.payload
+//     const email = (formData.get('email') as string) || ''
+//     const response: any = yield call(postRegisterInitiate, formData)
+//     yield put(
+//       registerInitiateSuccess({ email, message: response.data.message })
+//     )
+//   } catch (err: any) {
+//     yield put(
+//       registerFailure(
+//         err?.response?.data?.message || err.message || 'Registration failed'
+//       )
+//     )
+//   }
+// }
 
 // Step 2: verify OTP -> create user
-function* handleRegisterVerify(
-  action: ReturnType<typeof registerVerifyRequest>
-): Generator<CallEffect<any> | PutEffect<any>, void, any> {
-  try {
-    const response: any = yield call(postRegisterVerify, action.payload)
-    yield put(registerSuccess(response.data.user))
-  } catch (err: any) {
-    yield put(
-      registerFailure(
-        err?.response?.data?.message || err.message || 'Verification failed'
-      )
-    )
-  }
-}
+// function* handleRegisterVerify(
+//   action: ReturnType<typeof registerVerifyRequest>
+// ): Generator<CallEffect<any> | PutEffect<any>, void, any> {
+//   try {
+//     const response: any = yield call(postRegisterVerify, action.payload)
+//     yield put(registerSuccess(response.data.user))
+//   } catch (err: any) {
+//     yield put(
+//       registerFailure(
+//         err?.response?.data?.message || err.message || 'Verification failed'
+//       )
+//     )
+//   }
+// }
 function postLogin(payload: { email: string; password: string }) {
   return axios.post('/login', payload)
 }
@@ -143,15 +160,6 @@ function* handleCheckAuth(): Generator<
   }
 }
 
-export default function* userSaga() {
-  yield takeLatest(registerRequest.type, handleRegisterInitiate)
-  yield takeLatest(registerVerifyRequest.type, handleRegisterVerify)
-  yield takeLatest(loginRequest.type, handleLogin)
-  yield takeLatest(forgotPasswordRequest.type, handleForgotPassword)
-  yield takeLatest(resetPasswordRequest.type, handleResetPassword)
-  yield takeLatest(checkAuthRequest.type, handleCheckAuth)
-}
-
 // API functions
 function postForgotPassword(payload: { email: string }) {
   return axios.post('/forgot-password', payload)
@@ -163,4 +171,45 @@ function postResetPassword(payload: {
   newPassword: string
 }) {
   return axios.post('/reset-password', payload)
+}
+
+function* handleUpdateProfile(
+  action: ReturnType<typeof updateProfileRequest>
+): Generator<CallEffect<any> | PutEffect<any>, void, any> {
+  try {
+    const { userId, updates } = action.payload
+    const response: any = yield call(putProfile, userId, updates) // ✅ pass both args
+    yield put(updateProfileSuccess(response.data.user))
+  } catch (err: any) {
+    yield put(
+      updateProfileFailure(
+        err?.response?.data?.message || err.message || 'Profile update failed'
+      )
+    )
+  }
+}
+function* handleGetProfile(
+  action: ReturnType<typeof getProfileRequest>
+): Generator<CallEffect<any> | PutEffect<any>, void, any> {
+  try {
+    const response: any = yield call(fetchProfile, action.payload)
+    yield put(getProfileSuccess(response.data.user))
+  } catch (err: any) {
+    yield put(
+      getProfileFailure(
+        err?.response?.data?.message || err.message || 'Failed to fetch profile'
+      )
+    )
+  }
+}
+
+export default function* userSaga() {
+  // yield takeLatest(registerRequest.type, handleRegisterInitiate)
+  // yield takeLatest(registerVerifyRequest.type, handleRegisterVerify)
+  yield takeLatest(loginRequest.type, handleLogin)
+  yield takeLatest(forgotPasswordRequest.type, handleForgotPassword)
+  yield takeLatest(resetPasswordRequest.type, handleResetPassword)
+  yield takeLatest(checkAuthRequest.type, handleCheckAuth)
+  yield takeLatest(updateProfileRequest.type, handleUpdateProfile)
+  yield takeLatest(getProfileRequest.type, handleGetProfile)
 }
