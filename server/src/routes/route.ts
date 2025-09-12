@@ -70,70 +70,6 @@ router.post(
   }
 )
 
-// New: initiate registration -> generate OTP and send email
-// router.post(
-//   'api/auth/register/initiate',
-//   upload.single('profilePhoto'),
-//   async (req: Request, res: Response) => {
-//     try {
-//       const { name, email, password, age, gender, location } = req.body
-
-//       if (Number(age) < 0)
-//         return res.status(400).json({ message: 'Age cannot be below zero' })
-
-//       const existing = await User.findOne({ email })
-//       if (existing)
-//         return res.status(400).json({ message: 'Email already registered' })
-
-//       // Generate 6-digit OTP and expiry
-//       const otp = Math.floor(100000 + Math.random() * 900000).toString()
-//       const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000)
-
-//       const hashed = await bcrypt.hash(password, 10)
-
-//       // Upsert pending user for this email
-//       const pending = await PendingUser.findOneAndUpdate(
-//         { email },
-//         {
-//           name,
-//           email,
-//           password: hashed,
-//           age: Number(age),
-//           gender,
-//           location,
-//           profilePhoto: req.file ? req.file.path : undefined,
-//           otp,
-//           otpExpiresAt,
-//         },
-//         { upsert: true, new: true }
-//       )
-
-//       // Send OTP email
-//       const mailFrom = process.env.SMTP_USER
-//       await transporter.sendMail({
-//         from: mailFrom,
-//         to: email,
-//         subject: 'Your verification code',
-//         text: `Your OTP is ${otp}. It expires in 10 minutes.`,
-//         html: `<p>Your OTP is <b>${otp}</b>. It expires in 10 minutes.</p>`,
-//       })
-//       if (!pending) {
-//         return res.status(500).json({ message: 'Failed to createpending' })
-//       }
-//       res.status(200).json({
-//         message: 'OTP sent to your email',
-//         pendingUser: {
-//           id: pending._id,
-//           email: pending.email,
-//           name: pending.name,
-//         },
-//       })
-//     } catch (err: any) {
-//       console.error(err)
-//       res.status(500).json({ message: err.message || 'Server error' })
-//     }
-//   }
-// )
 router.post(
   '/api/auth/register/initiate', // 🔥 make sure to start with a leading slash
   upload.single('profilePhoto'),
@@ -307,8 +243,8 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
     const resetOTPExpiry = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
 
     // Save reset OTP to user
-    user.resetPasswordOTP = resetOTP
-    user.resetPasswordOTPExpires = resetOTPExpiry
+    user.otp = resetOTP
+    user.otpExpires = resetOTPExpiry
     await user.save()
 
     // Send email with OTP
@@ -360,8 +296,8 @@ router.post('/reset-password', async (req: Request, res: Response) => {
     // Find user with valid reset OTP
     const user = await User.findOne({
       email,
-      resetPasswordOTP: otp,
-      resetPasswordOTPExpires: { $gt: Date.now() },
+      otp: otp,
+      otpExpires: { $gt: Date.now() },
     })
 
     if (!user) {
