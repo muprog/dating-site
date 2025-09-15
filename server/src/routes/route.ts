@@ -5,6 +5,7 @@ import PendingUser from '../model/PendingUser'
 import { Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
 import authMiddleware from '../middleWare/authMiddleware'
+import { AuthRequest } from '../middleWare/authMiddleware'
 const express = require('express')
 const router = express.Router()
 const { test, registerUser } = require('../controllers/controller')
@@ -319,25 +320,33 @@ router.post('/reset-password', async (req: Request, res: Response) => {
     res.status(500).json({ message: err.message || 'Server error' })
   }
 })
-// ✅ GET profile
-router.get('/users/:id', async (req: Request, res: Response) => {
-  try {
-    const user = await User.findById(req.params.id).select('-password')
-    if (!user) return res.status(404).json({ message: 'User not found' })
-    res.json({ user })
-  } catch (err) {
-    res.status(500).json({ message: 'Server error' })
+router.get(
+  '/api/profile/me',
+  authMiddleware,
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const user = await User.findById(req.userId).select('-password')
+      if (!user) return res.status(404).json({ message: 'User not found' })
+      res.json(user)
+    } catch (err) {
+      res.status(500).json({ message: 'Server error' })
+    }
   }
-})
+)
 
-// ✅ UPDATE profile
+// UPDATE profile with file upload
 router.put(
-  '/users/:id',
-  upload.array('picture', 5),
-  async (req: Request, res: Response) => {
+  '/api/profile/me',
+  authMiddleware,
+  upload.fields([
+    { name: 'picture', maxCount: 1 },
+    { name: 'photos', maxCount: 5 },
+  ]),
+  async (req: AuthRequest, res: Response) => {
     try {
       const { name, age, gender, location, bio, interests } = req.body
-      const updateData: any = {
+
+      const updateFields: any = {
         name,
         age,
         gender,
@@ -346,19 +355,31 @@ router.put(
         interests: interests ? JSON.parse(interests) : [],
       }
 
-      // Handle uploaded photos
-      if (req.files) {
-        const files = req.files as Express.Multer.File[]
-        updateData.photos = files.map((f) => `/uploads/${f.filename}`)
+      // Profile picture
+      if (req.files && (req.files as any).picture) {
+        updateFields.picture = `/uploads/${
+          (req.files as any).picture[0].filename
+        }`
       }
 
-      const user = await User.findByIdAndUpdate(req.params.id, updateData, {
-        new: true,
-      }).select('-password')
+      // Multiple photos
+      if (req.files && (req.files as any).photos) {
+        updateFields.photos = (req.files as any).photos.map(
+          (file: any) => `/uploads/${file.filename}`
+        )
+      }
 
-      res.json({ user })
+      const updatedUser = await User.findByIdAndUpdate(
+        req.userId,
+        updateFields,
+        {
+          new: true,
+        }
+      ).select('-password')
+
+      res.json(updatedUser)
     } catch (err) {
-      res.status(500).json({ message: 'Profile update failed' })
+      res.status(500).json({ message: 'Server error' })
     }
   }
 )
