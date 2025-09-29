@@ -2,6 +2,7 @@ const express = require('express')
 const bcrypt = require('bcrypt')
 const nodemailer = require('nodemailer')
 const jwt = require('jsonwebtoken')
+const crypto = require('crypto')
 import type { Request, Response } from 'express'
 
 const User = require('../models/User')
@@ -122,6 +123,58 @@ router.post('/login', async (req: Request, res: Response) => {
     })
   } catch (err) {
     console.error(err)
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
+router.post('/forgot-password', async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body
+    const user = await User.findOne({ email })
+    if (!user) {
+      return res.status(400).json({ message: 'User not found' })
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString()
+
+    user.resetPasswordOTP = otp
+    user.resetPasswordExpires = Date.now() + 10 * 60 * 1000 // valid for 10 mins
+    await user.save()
+
+    // Send OTP via email
+    await transporter.sendMail({
+      to: user.email,
+      subject: 'Your Password Reset OTP',
+      html: `<p>Your OTP is <b>${otp}</b>. It expires in 10 minutes.</p>`,
+    })
+
+    res.json({ message: 'OTP sent to your email' })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
+router.post('/reset-password', async (req: Request, res: Response) => {
+  try {
+    const { email, otp, newPassword } = req.body
+    const user = await User.findOne({
+      email,
+      resetPasswordOTP: otp,
+      resetPasswordExpires: { $gt: Date.now() }, // not expired
+    })
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' })
+    }
+    const hashed = await bcrypt.hash(newPassword, 10)
+    user.password = hashed // hash before saving if using bcrypt
+    user.resetPasswordOTP = undefined
+    user.resetPasswordExpires = undefined
+    await user.save()
+
+    res.json({ message: 'Password reset successfully' })
+  } catch (err) {
     res.status(500).json({ message: 'Server error' })
   }
 })

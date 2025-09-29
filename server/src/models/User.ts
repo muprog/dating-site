@@ -24,6 +24,8 @@ export interface IUser {
   verified?: boolean
   otp?: string
   otpExpires?: Date
+  resetPasswordOTP?: string
+  resetPasswordExpires?: Date
 }
 
 const UserSchema = new Schema(
@@ -59,6 +61,8 @@ const UserSchema = new Schema(
     verified: { type: Boolean, default: false },
     otp: { type: String },
     otpExpires: { type: Date },
+    resetPasswordOTP: { type: String },
+    resetPasswordExpires: { type: Date },
   },
   { timestamps: true }
 )

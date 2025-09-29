@@ -12,7 +12,7 @@ app.use(
   })
 )
 app.use(express.json())
-
+//
 const authRoutes = require('./routes/auth')
 app.use('/api/auth', authRoutes)
 

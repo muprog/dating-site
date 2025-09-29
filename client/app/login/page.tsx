@@ -1,115 +1,6 @@
-// 'use client'
-
-// import React, { useState } from 'react'
-// import { useDispatch, useSelector } from 'react-redux'
-// import { loginRequest } from '@/store/slices/authSlice'
-// import { RootState } from '@/store/store'
-// import { useRouter } from 'next/navigation'
-// import Button from '@/components/Button'
-
-// export default function LoginPage() {
-//   const dispatch = useDispatch()
-//   const router = useRouter()
-//   const { loading, error, user } = useSelector((state: RootState) => state.auth)
-
-//   const [form, setForm] = useState({
-//     email: '',
-//     password: '',
-//   })
-
-//   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-//     setForm({ ...form, [e.target.name]: e.target.value })
-//   }
-
-//   const handleSubmit = (e: React.FormEvent) => {
-//     e.preventDefault()
-//     dispatch(loginRequest(form))
-//   }
-
-//   if (user) {
-//     router.push('/dashboard')
-//   }
-
-//   return (
-//     <div className='flex flex-col items-center justify-center min-h-screen'>
-//       <h2 className='text-2xl font-bold mb-4'>Welcome Back!</h2>
-
-//       <form onSubmit={handleSubmit} className='flex flex-col gap-3 w-80'>
-//         <input
-//           type='email'
-//           name='email'
-//           placeholder='Email'
-//           value={form.email}
-//           onChange={handleChange}
-//           required
-//           className='border p-2 rounded'
-//         />
-//         <input
-//           type='password'
-//           name='password'
-//           placeholder='Password'
-//           value={form.password}
-//           onChange={handleChange}
-//           required
-//           className='border p-2 rounded'
-//         />
-
-//         {/* <button
-//           type='submit'
-//           disabled={loading}
-//           className='bg-pink-500 text-white p-2 rounded'
-//         >
-//           {loading ? 'Logging in...' : 'Log In'}
-//         </button> */}
-//         <Button
-//           btnType='submit'
-//           btnStyle='bg-pink-500 text-white p-2 rounded'
-//           title={`${loading ? 'Logging in...' : 'Log In'}`}
-//           disabled={loading}
-//         />
-
-//         {error && <p className='text-red-500 text-sm'>{error}</p>}
-//       </form>
-
-//       <div className='w-80 text-right mt-2'>
-//         <a href='/forgot-password' className='text-sm text-blue-500'>
-//           Forgot Password?
-//         </a>
-//       </div>
-
-//       <div className='flex items-center w-80 my-4'>
-//         <hr className='flex-grow border-gray-300' />
-//         <span className='px-2 text-gray-500 text-sm'>or</span>
-//         <hr className='flex-grow border-gray-300' />
-//       </div>
-
-//       <div className='flex flex-col gap-2 w-80'>
-//         <Button
-//           title='Continue with Google'
-//           btnType='submit'
-//           btnStyle='border border-gray-200 p-2 rounded bg-gray-100 hover:bg-gray-200 font-medium'
-//         />
-
-//         <Button
-//           title='Continue with Facebook'
-//           btnType='submit'
-//           btnStyle='border border-gray-200 p-2 rounded bg-gray-100 hover:bg-gray-200 font-medium'
-//         />
-//       </div>
-//       {/* Register link */}
-//       <div className='mt-4 text-sm'>
-//         New here?{' '}
-//         <a href='/register' className='text-blue-500'>
-//           Create an account
-//         </a>
-//       </div>
-//     </div>
-//   )
-// }
-
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { loginRequest } from '@/store/slices/authSlice'
 import { RootState } from '@/store/store'
@@ -135,10 +26,13 @@ export default function LoginPage() {
     e.preventDefault()
     dispatch(loginRequest(form))
   }
+  useEffect(() => {
+    if (user) {
+      router.push('/profile')
+    }
+  }, [user, router])
 
-  if (user) {
-    router.push('/dashboard')
-  }
+  const handleSocialLogin = () => {}
 
   return (
     <div className='flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-100 via-white to-pink-100 px-4'>
@@ -205,11 +99,13 @@ export default function LoginPage() {
             title='Continue with Google'
             btnType='button'
             btnStyle='border border-gray-300 p-3 rounded-lg bg-white hover:bg-gray-50 shadow-sm flex justify-center items-center gap-2'
+            onClick={handleSocialLogin}
           />
           <Button
             title='Continue with Facebook'
             btnType='button'
             btnStyle='border border-gray-300 p-3 rounded-lg bg-white hover:bg-gray-50 shadow-sm flex justify-center items-center gap-2'
+            onClick={handleSocialLogin}
           />
         </div>
 

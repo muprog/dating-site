@@ -111,7 +111,7 @@
 
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { registerRequest } from '@/store/slices/authSlice'
 import { RootState } from '@/store/store'
@@ -140,10 +140,11 @@ export default function RegisterPage() {
     e.preventDefault()
     dispatch(registerRequest(form))
   }
-
-  if (otpSent) {
-    router.push('/verify-otp')
-  }
+  useEffect(() => {
+    if (otpSent) {
+      router.push('/verify-otp')
+    }
+  }, [otpSent, router])
 
   return (
     <div className='flex items-center justify-center min-h-screen bg-gradient-to-br from-pink-100 via-white to-blue-100 px-4'>

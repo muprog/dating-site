@@ -17,6 +17,7 @@ interface AuthState {
   error: string | null
   otpSent: boolean
   verified: boolean
+  message: string | null
 }
 
 const initialState: AuthState = {
@@ -25,6 +26,7 @@ const initialState: AuthState = {
   error: null,
   otpSent: false,
   verified: false,
+  message: null,
 }
 
 const authSlice = createSlice({
@@ -69,6 +71,38 @@ const authSlice = createSlice({
       state.loading = false
       state.error = action.payload
     },
+    forgotPasswordRequest: (
+      state,
+      _action: PayloadAction<{ email: string }>
+    ) => {
+      state.loading = true
+    },
+    forgotPasswordSuccess: (state, action: PayloadAction<string>) => {
+      state.loading = false
+      state.message = action.payload
+      state.otpSent = true // let frontend know OTP step is ready
+    },
+
+    forgotPasswordFailure: (state, action: PayloadAction<string>) => {
+      state.loading = false
+      state.error = action.payload
+    },
+
+    resetPasswordRequest: (
+      state,
+      _action: PayloadAction<{ email: string; otp: string; password: string }>
+    ) => {
+      state.loading = true
+    },
+    resetPasswordSuccess: (state, action: PayloadAction<string>) => {
+      state.loading = false
+      state.message = action.payload
+      state.verified = true
+    },
+    resetPasswordFailure: (state, action: PayloadAction<string>) => {
+      state.loading = false
+      state.error = action.payload
+    },
   },
 })
 
@@ -82,6 +116,12 @@ export const {
   loginRequest,
   loginSuccess,
   loginFailure,
+  forgotPasswordRequest,
+  forgotPasswordSuccess,
+  forgotPasswordFailure,
+  resetPasswordRequest,
+  resetPasswordSuccess,
+  resetPasswordFailure,
 } = authSlice.actions
 
 export default authSlice.reducer
