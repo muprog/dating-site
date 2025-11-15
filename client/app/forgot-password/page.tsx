@@ -55,7 +55,7 @@ export default function ForgotPasswordPage() {
               />
               <Button
                 btnType='submit'
-                btnStyle='bg-blue-500 text-white p-2 rounded'
+                btnStyle='bg-pink-500 text-white p-2 rounded'
                 title={loading ? 'Sending...' : 'Send OTP'}
               />
             </form>
@@ -84,7 +84,7 @@ export default function ForgotPasswordPage() {
               />
               <Button
                 btnType='submit'
-                btnStyle='bg-green-500 text-white p-2 rounded'
+                btnStyle='bg-pink-500 text-white p-2 rounded'
                 title={loading ? 'Resetting...' : 'Reset Password'}
               />
             </form>

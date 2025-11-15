@@ -1,14 +1,15 @@
-const express = require('express')
+import express = require('express')
 const bcrypt = require('bcrypt')
 const nodemailer = require('nodemailer')
 const jwt = require('jsonwebtoken')
 const crypto = require('crypto')
 import type { Request, Response } from 'express'
-
+import passport = require('passport')
 const User = require('../models/User')
-
+const auth = require('../middleware/auth')
 const router = express.Router()
-
+const multer = require('multer')
+const path = require('path')
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -17,6 +18,58 @@ const transporter = nodemailer.createTransport({
   },
 })
 
+// Add to auth routes
+router.post('/logout', (req: express.Request, res: express.Response) => {
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+  })
+  res.json({ message: 'Logout successful' })
+})
+router.get(
+  '/google',
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+)
+router.get(
+  '/google/callback',
+  passport.authenticate('google', {
+    failureRedirect: '/login',
+    session: false,
+  }),
+  (req: Request, res: Response) => {
+    // req.user is set by passport
+    const user = req.user as any
+    const token = jwt.sign(
+      { id: user._id?.toString(), email: user.email },
+      process.env.JWT_SECRET as string,
+      { expiresIn: '7d' }
+    )
+    // redirect to client with token
+    res.redirect(`${process.env.FRONTEND_URL}/social-success?token=${token}`)
+  }
+)
+
+// start Facebook OAuth
+router.get('/facebook', passport.authenticate('facebook', { scope: ['email'] }))
+
+// Facebook callback
+router.get(
+  '/facebook/callback',
+  passport.authenticate('facebook', {
+    failureRedirect: '/login',
+    session: false,
+  }),
+  (req: Request, res: Response) => {
+    const user = req.user as any
+    const token = jwt.sign(
+      { id: user._id?.toString(), email: user.email },
+      process.env.JWT_SECRET as string,
+      { expiresIn: '7d' }
+    )
+    res.redirect(`${process.env.FRONTEND_URL}/social-success?token=${token}`)
+  }
+)
 router.post('/register', async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, email, password } = req.body
@@ -90,6 +143,11 @@ router.post('/login', async (req: Request, res: Response) => {
     const user = await User.findOne({ email })
     if (!user) {
       return res.status(400).json({ message: 'Invalid email or password' })
+    }
+    if (!user.password) {
+      return res
+        .status(400)
+        .json({ message: 'Please log in with Google or Facebook' })
     }
 
     const isMatch = await bcrypt.compare(password, user.password)
@@ -175,6 +233,172 @@ router.post('/reset-password', async (req: Request, res: Response) => {
 
     res.json({ message: 'Password reset successfully' })
   } catch (err) {
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
+const storage = multer.diskStorage({
+  destination: (
+    req: Request,
+    file: any,
+    cb: (error: Error | null, destination: string) => void
+  ) => {
+    cb(null, 'uploads/')
+  },
+  filename: (
+    req: Request,
+    file: any,
+    cb: (error: Error | null, filename: string) => void
+  ) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9)
+    cb(null, 'photo-' + uniqueSuffix + path.extname(file.originalname))
+  },
+})
+
+const fileFilter = (req: Request, file: any, cb: any) => {
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true)
+  } else {
+    cb(new Error('Only image files are allowed!'))
+  }
+}
+
+const upload = multer({
+  storage: storage,
+  fileFilter: fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+})
+
+router.get('/profile', auth, async (req: any, res: any) => {
+  try {
+    const user = await User.findById(req.user.id).select(
+      '-password -otp -resetPasswordOTP'
+    )
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+    res.json(user)
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
+// Update user profile
+router.put('/profile', auth, async (req: any, res: any) => {
+  try {
+    const { name, age, bio, interests, location } = req.body
+
+    const updateData: any = {}
+    if (name) updateData.name = name
+    if (age) updateData.age = age
+    if (bio !== undefined) updateData.bio = bio
+    if (interests) updateData.interests = interests
+    if (location) {
+      updateData.geoLocation = {
+        type: 'Point',
+        coordinates: [location.longitude, location.latitude],
+      }
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { $set: updateData },
+      { new: true }
+    ).select('-password -otp -resetPasswordOTP')
+
+    res.json(user)
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
+// Upload profile photos
+router.post(
+  '/profile/photos',
+  auth,
+  upload.array('photos', 10),
+  async (req: any, res: any) => {
+    try {
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ message: 'No files uploaded' })
+      }
+
+      const photoUrls = req.files.map((file: any) => file.path)
+
+      const user = await User.findByIdAndUpdate(
+        req.user.id,
+        { $push: { photos: { $each: photoUrls } } },
+        { new: true }
+      ).select('-password -otp -resetPasswordOTP')
+
+      res.json(user)
+    } catch (error) {
+      res.status(500).json({ message: 'Server error' })
+    }
+  }
+)
+
+// Delete profile photo
+router.delete('/profile/photos/:photoUrl', auth, async (req: any, res: any) => {
+  try {
+    const { photoUrl } = req.params
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { $pull: { photos: photoUrl } },
+      { new: true }
+    ).select('-password -otp -resetPasswordOTP')
+
+    res.json(user)
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+router.get('/test-cookies', (req: express.Request, res: express.Response) => {
+  const cookies = req?.cookies
+  const token = req.cookies?.token
+
+  console.log('All cookies:', cookies)
+  console.log('Token cookie:', token)
+
+  res.json({
+    success: true,
+    message: 'Cookie test endpoint',
+    cookies: cookies,
+    token: token,
+    hasToken: !!token,
+  })
+})
+
+// routes/auth.ts - Add this route
+router.get('/check', auth, async (req: any, res: Response) => {
+  try {
+    console.log('🔐 Auth check for user:', req.user.id)
+
+    // Get fresh user data from database
+    const user = await User.findById(req.user.id).select(
+      '-password -otp -resetPasswordOTP'
+    )
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+
+    res.json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        age: user.age,
+        bio: user.bio,
+        interests: user.interests,
+        photos: user.photos,
+      },
+    })
+  } catch (error) {
+    console.error('Auth check error:', error)
     res.status(500).json({ message: 'Server error' })
   }
 })

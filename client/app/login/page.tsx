@@ -31,7 +31,7 @@ export default function LoginPage() {
       router.push('/profile')
     }
   }, [user, router])
-
+  console.log(user)
   const handleSocialLogin = () => {}
 
   return (

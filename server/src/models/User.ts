@@ -1,15 +1,18 @@
 const mongoose = require('mongoose')
-const { Schema } = mongoose
+const { Schema, Document } = mongoose
 
 import type { Model } from 'mongoose' // type import
 
-export interface IUser {
+export interface IUser extends Document {
+  // _id: string
   email: string
-  password: string
+  password?: string
   name: string
+  googleId?: string
+  facebookId?: string
   age?: number
   gender?: 'male' | 'female' | 'other'
-  location?: {
+  geoLocation?: {
     type: 'Point'
     coordinates: [number, number] // [longitude, latitude]
   }
@@ -30,16 +33,19 @@ export interface IUser {
 
 const UserSchema = new Schema(
   {
+    // _id: { type: String },
     email: { type: String, unique: true, required: true },
-    password: { type: String, required: true },
+    password: { type: String },
     name: { type: String, required: true },
+    googleId: { type: String, unique: true, sparse: true },
+    facebookId: { type: String, unique: true, sparse: true },
     age: { type: Number, required: false },
     gender: {
       type: String,
       enum: ['male', 'female', 'other'],
       required: false,
     },
-    location: {
+    geoLocation: {
       type: {
         type: String,
         enum: ['Point'],
@@ -67,7 +73,7 @@ const UserSchema = new Schema(
   { timestamps: true }
 )
 
-UserSchema.index({ location: '2dsphere' })
+UserSchema.index({ geoLocation: '2dsphere' })
 
 // Create model
 const User = mongoose.model('User', UserSchema)

@@ -4,9 +4,10 @@ import React from 'react'
 
 type ButtonProps = {
   title: string
-  btnType?: 'button' | 'submit' | 'reset' // ✅ only HTML button types allowed
-  btnStyle?: string // ✅ custom Tailwind or CSS classes
-  onClick?: () => void // ✅ optional click handler
+  btnType?: 'button' | 'submit' | 'reset'
+  btnStyle?: string
+  // onClick?: () => void
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void
   disabled?: boolean
 }
 
@@ -15,6 +16,7 @@ export default function Button({
   btnType = 'button',
   btnStyle = 'bg-pink-500 text-white p-2 rounded',
   onClick,
+  // onClick1,
   disabled = false,
 }: ButtonProps) {
   return (

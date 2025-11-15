@@ -18,6 +18,7 @@ interface AuthState {
   otpSent: boolean
   verified: boolean
   message: string | null
+  checkingAuth: boolean
 }
 
 const initialState: AuthState = {
@@ -27,6 +28,7 @@ const initialState: AuthState = {
   otpSent: false,
   verified: false,
   message: null,
+  checkingAuth: false,
 }
 
 const authSlice = createSlice({
@@ -63,12 +65,20 @@ const authSlice = createSlice({
     ) => {
       state.loading = true
     },
+    // slices/authSlice.ts - Check your loginSuccess reducer
     loginSuccess: (state, action: PayloadAction<any>) => {
       state.loading = false
-      state.user = action.payload
+      // Make sure we're storing the user object correctly
+      state.user = action.payload.user || action.payload
+      state.error = null
+
+      console.log('✅ Login success - User stored:', state.user)
+      console.log('✅ User ID:', state.user?.id)
+      console.log('✅ User _id:', state.user?._id)
     },
     loginFailure: (state, action: PayloadAction<string>) => {
       state.loading = false
+      state.user = action.payload
       state.error = action.payload
     },
     forgotPasswordRequest: (
@@ -103,6 +113,31 @@ const authSlice = createSlice({
       state.loading = false
       state.error = action.payload
     },
+    logoutRequest: (state) => {
+      state.loading = true
+    },
+    logoutSuccess: (state) => {
+      state.loading = false
+      state.user = null
+      state.error = null
+    },
+    logoutFailure: (state, action: PayloadAction<string>) => {
+      state.loading = false
+      state.error = action.payload
+    },
+    checkAuthRequest: (state) => {
+      state.checkingAuth = true
+    },
+    checkAuthSuccess: (state, action: PayloadAction<any>) => {
+      state.checkingAuth = false
+      state.user = action.payload
+      state.error = null
+    },
+    checkAuthFailure: (state) => {
+      state.checkingAuth = false
+      state.user = null
+      state.error = null
+    },
   },
 })
 
@@ -122,6 +157,12 @@ export const {
   resetPasswordRequest,
   resetPasswordSuccess,
   resetPasswordFailure,
+  logoutRequest,
+  logoutSuccess,
+  logoutFailure,
+  checkAuthRequest,
+  checkAuthSuccess,
+  checkAuthFailure,
 } = authSlice.actions
 
 export default authSlice.reducer

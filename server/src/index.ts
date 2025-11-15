@@ -1,10 +1,25 @@
 const express = require('express')
 const mongoose = require('mongoose')
 const dotenv = require('dotenv')
-const cors = require('cors')
 dotenv.config()
+const cors = require('cors')
+const cookieParser = require('cookie-parser')
+const passport = require('./config/passport')
+import session = require('express-session')
 
 const app = express()
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'keyboard cat',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false },
+  })
+)
+
+// initialize passport AFTER session middleware
+app.use(passport.initialize())
+app.use(passport.session())
 app.use(
   cors({
     origin: process.env.FRONTEND_URL, // your Next.js frontend
@@ -12,10 +27,10 @@ app.use(
   })
 )
 app.use(express.json())
+app.use(cookieParser())
 //
 const authRoutes = require('./routes/auth')
 app.use('/api/auth', authRoutes)
-
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
