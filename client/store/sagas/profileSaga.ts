@@ -162,6 +162,7 @@ function* handleUploadPhotos(
 ): SagaIterator {
   try {
     console.log('🔄 Saga: Uploading photos...')
+
     const response = yield call(
       axios.post,
       '/api/auth/profile/photos',
@@ -170,17 +171,40 @@ function* handleUploadPhotos(
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        timeout: 60000, // Increase timeout to 60 seconds for larger files
+        onUploadProgress: (progressEvent) => {
+          const progress = Math.round(
+            (progressEvent.loaded * 100) / (progressEvent.total || 1)
+          )
+          console.log(`📤 Upload progress: ${progress}%`)
+        },
       }
     )
+
     console.log('✅ Saga: Photos uploaded successfully:', response.data)
     yield put(uploadPhotosSuccess(response.data))
   } catch (error: any) {
-    console.error('❌ Saga: Photo upload failed:', error.response?.data)
-    yield put(
-      uploadPhotosFailure(
-        error.response?.data?.message || 'Failed to upload photos'
-      )
-    )
+    console.error('❌ Saga: Photo upload failed:')
+    console.error('❌ Error message:', error.message)
+    console.error('❌ Response status:', error.response?.status)
+    console.error('❌ Response data:', error.response?.data)
+    console.error('❌ Error code:', error.code)
+
+    let errorMessage = 'Failed to upload photos'
+
+    if (error.response?.data?.message) {
+      errorMessage = error.response.data.message
+    } else if (error.code === 'ECONNABORTED') {
+      errorMessage = 'Upload timeout. Please try again with smaller files.'
+    } else if (error.code === 'NETWORK_ERROR') {
+      errorMessage = 'Network error. Please check your connection.'
+    } else if (!error.response) {
+      errorMessage = 'Server unavailable. Please try again later.'
+    } else if (error.response?.status === 413) {
+      errorMessage = 'File too large. Maximum size is 10MB.'
+    }
+
+    yield put(uploadPhotosFailure(errorMessage))
   }
 }
 

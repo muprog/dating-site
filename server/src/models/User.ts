@@ -56,6 +56,7 @@ const UserSchema = new Schema(
         default: [0, 0], // ✅ fix: prevents Mongo error
       },
     },
+    location: { type: String },
     bio: String,
     photos: { type: [String], default: [] },
     interests: { type: [String], default: [] },

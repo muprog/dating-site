@@ -263,13 +263,50 @@ const fileFilter = (req: Request, file: any, cb: any) => {
   }
 }
 
+// const upload = multer({
+//   storage: storage,
+//   fileFilter: fileFilter,
+//   limits: {
+//     fileSize: 5 * 1024 * 1024, // 5MB limit
+//   },
+// })
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
+    fileSize: 10 * 1024 * 1024, // Increase to 10MB
+    files: 10,
   },
 })
+
+// Add proper error handling middleware for multer
+const handleMulterError = (error: any, req: any, res: any, next: any) => {
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        message: 'File too large. Maximum size is 10MB.',
+      })
+    }
+    if (error.code === 'LIMIT_FILE_COUNT') {
+      return res.status(400).json({
+        message: 'Too many files. Maximum is 10.',
+      })
+    }
+    if (error.code === 'LIMIT_UNEXPECTED_FILE') {
+      return res.status(400).json({
+        message: 'Unexpected file field.',
+      })
+    }
+  }
+
+  if (error) {
+    return res.status(400).json({
+      message: error.message,
+    })
+  }
+
+  next()
+}
 
 router.get('/profile', auth, async (req: any, res: any) => {
   try {
@@ -286,46 +323,191 @@ router.get('/profile', auth, async (req: any, res: any) => {
 })
 
 // Update user profile
+// router.put('/profile', auth, async (req: any, res: any) => {
+//   try {
+//     const { name, age, bio, interests, location } = req.body
+
+//     const updateData: any = {}
+//     if (name) updateData.name = name
+//     if (age) updateData.age = age
+//     if (bio !== undefined) updateData.bio = bio
+//     if (interests) updateData.interests = interests
+//     if (location) {
+//       updateData.geoLocation = {
+//         type: 'Point',
+//         coordinates: [location.longitude, location.latitude],
+//       }
+//     }
+
+//     const user = await User.findByIdAndUpdate(
+//       req.user.id,
+//       { $set: updateData },
+//       { new: true }
+//     ).select('-password -otp -resetPasswordOTP')
+
+//     res.json(user)
+//   } catch (error) {
+//     res.status(500).json({ message: 'Server error' })
+//   }
+// })
+// router.put('/profile', auth, async (req: any, res: any) => {
+//   try {
+//     const { name, age, bio, interests, location } = req.body
+//     console.log('🔄 Updating profile with data:', req.body)
+
+//     const updateData: any = {}
+//     if (name) updateData.name = name
+//     if (age) updateData.age = parseInt(age) // Convert to number
+//     if (bio !== undefined) updateData.bio = bio
+//     if (interests) updateData.interests = interests
+
+//     // Handle location - it's coming as a string from frontend
+//     if (location && location.trim() !== '') {
+//       // For now, let's just store the location string in bio or a separate field
+//       // Or you can implement geocoding to convert address to coordinates
+//       updateData.bio = updateData.bio
+//         ? `${updateData.bio} | Location: ${location}`
+//         : `Location: ${location}`
+
+//       // If you want to store coordinates, you'll need a geocoding service
+//       // For now, we'll skip geoLocation since we don't have coordinates
+//       console.log('📍 Location provided (not storing coordinates):', location)
+//     }
+
+//     console.log('📝 Final update data:', updateData)
+
+//     const user = await User.findByIdAndUpdate(
+//       req.user.id,
+//       { $set: updateData },
+//       { new: true, runValidators: true }
+//     ).select('-password -otp -resetPasswordOTP')
+
+//     if (!user) {
+//       return res.status(404).json({ message: 'User not found' })
+//     }
+
+//     console.log('✅ Profile updated successfully')
+//     res.json(user)
+//   } catch (error: any) {
+//     console.error('❌ Profile update error:', error)
+
+//     // Better error handling
+//     if (error.name === 'ValidationError') {
+//       const errors = Object.values(error.errors).map((err: any) => err.message)
+//       return res.status(400).json({
+//         message: 'Validation error',
+//         errors,
+//       })
+//     }
+
+//     if (error.code === 11000) {
+//       return res.status(400).json({
+//         message: 'Email already exists',
+//       })
+//     }
+
+//     res.status(500).json({
+//       message: 'Server error',
+//       error: error.message,
+//     })
+//   }
+// })
+
 router.put('/profile', auth, async (req: any, res: any) => {
   try {
     const { name, age, bio, interests, location } = req.body
+    console.log('🔄 Updating profile with data:', req.body)
 
     const updateData: any = {}
     if (name) updateData.name = name
-    if (age) updateData.age = age
+    if (age) updateData.age = parseInt(age)
     if (bio !== undefined) updateData.bio = bio
     if (interests) updateData.interests = interests
-    if (location) {
-      updateData.geoLocation = {
-        type: 'Point',
-        coordinates: [location.longitude, location.latitude],
-      }
+
+    // ✅ Store location in a separate field instead of appending to bio
+    if (location !== undefined) {
+      updateData.location = location.trim() // Store in separate location field
+      console.log('📍 Location to store:', location)
     }
+
+    console.log('📝 Final update data:', updateData)
 
     const user = await User.findByIdAndUpdate(
       req.user.id,
       { $set: updateData },
-      { new: true }
+      { new: true, runValidators: true }
     ).select('-password -otp -resetPasswordOTP')
 
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+
+    console.log('✅ Profile updated successfully')
     res.json(user)
-  } catch (error) {
-    res.status(500).json({ message: 'Server error' })
+  } catch (error: any) {
+    console.error('❌ Profile update error:', error)
+
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map((err: any) => err.message)
+      return res.status(400).json({
+        message: 'Validation error',
+        errors,
+      })
+    }
+
+    if (error.code === 11000) {
+      return res.status(400).json({
+        message: 'Email already exists',
+      })
+    }
+
+    res.status(500).json({
+      message: 'Server error',
+      error: error.message,
+    })
   }
 })
 
 // Upload profile photos
+// router.post(
+//   '/profile/photos',
+//   auth,
+//   upload.array('photos', 10),
+//   async (req: any, res: any) => {
+//     try {
+//       if (!req.files || req.files.length === 0) {
+//         return res.status(400).json({ message: 'No files uploaded' })
+//       }
+
+//       const photoUrls = req.files.map((file: any) => file.filename)
+
+//       const user = await User.findByIdAndUpdate(
+//         req.user.id,
+//         { $push: { photos: { $each: photoUrls } } },
+//         { new: true }
+//       ).select('-password -otp -resetPasswordOTP')
+
+//       res.json(user)
+//     } catch (error) {
+//       res.status(500).json({ message: 'Server error' })
+//     }
+//   }
+// )
+
 router.post(
   '/profile/photos',
   auth,
   upload.array('photos', 10),
+  handleMulterError, // Add this error handling middleware
   async (req: any, res: any) => {
     try {
       if (!req.files || req.files.length === 0) {
         return res.status(400).json({ message: 'No files uploaded' })
       }
 
-      const photoUrls = req.files.map((file: any) => file.path)
+      const photoUrls = req.files.map((file: any) => {
+        return `${file.filename}`
+      })
 
       const user = await User.findByIdAndUpdate(
         req.user.id,
@@ -333,29 +515,61 @@ router.post(
         { new: true }
       ).select('-password -otp -resetPasswordOTP')
 
-      res.json(user)
-    } catch (error) {
-      res.status(500).json({ message: 'Server error' })
+      console.log('✅ Photos uploaded successfully')
+      res.json({
+        ...user.toObject(),
+        message: `Successfully uploaded ${req.files.length} photo(s)`,
+      })
+    } catch (error: any) {
+      console.error('❌ Photo upload error:', error)
+      res.status(500).json({
+        message: 'Server error',
+        error: error.message,
+      })
     }
   }
 )
 
-// Delete profile photo
-router.delete('/profile/photos/:photoUrl', auth, async (req: any, res: any) => {
-  try {
-    const { photoUrl } = req.params
+router.delete(
+  '/profile/photos/:photoIndex',
+  auth,
+  async (req: any, res: any) => {
+    try {
+      const photoIndex = parseInt(req.params.photoIndex)
 
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { $pull: { photos: photoUrl } },
-      { new: true }
-    ).select('-password -otp -resetPasswordOTP')
+      console.log(
+        '🗑️ Deleting photo at index:',
+        photoIndex,
+        'for user:',
+        req.user.id
+      )
 
-    res.json(user)
-  } catch (error) {
-    res.status(500).json({ message: 'Server error' })
+      // First, get the user to check the photo at that index
+      const user = await User.findById(req.user.id)
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' })
+      }
+
+      // Check if the index is valid
+      if (photoIndex < 0 || photoIndex >= user.photos.length) {
+        return res.status(400).json({ message: 'Invalid photo index' })
+      }
+
+      // Remove the photo at the specified index
+      user.photos.splice(photoIndex, 1)
+      await user.save()
+
+      console.log('✅ Photo deleted successfully')
+      res.json({
+        ...user.toObject(),
+        message: 'Photo deleted successfully',
+      })
+    } catch (error) {
+      console.error('❌ Photo delete error:', error)
+      res.status(500).json({ message: 'Server error' })
+    }
   }
-})
+)
 router.get('/test-cookies', (req: express.Request, res: express.Response) => {
   const cookies = req?.cookies
   const token = req.cookies?.token

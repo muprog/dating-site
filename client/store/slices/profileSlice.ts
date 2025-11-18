@@ -9,6 +9,7 @@ export interface UserProfile {
   photos: string[]
   interests: string[]
   gender?: 'male' | 'female' | 'other'
+  location: string
   geoLocation?: {
     type: 'Point'
     coordinates: [number, number]

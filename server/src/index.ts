@@ -6,7 +6,7 @@ const cors = require('cors')
 const cookieParser = require('cookie-parser')
 const passport = require('./config/passport')
 import session = require('express-session')
-
+const path = require('path')
 const app = express()
 app.use(
   session({
@@ -28,6 +28,8 @@ app.use(
 )
 app.use(express.json())
 app.use(cookieParser())
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')))
+
 //
 const authRoutes = require('./routes/auth')
 app.use('/api/auth', authRoutes)
