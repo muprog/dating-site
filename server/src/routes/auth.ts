@@ -413,21 +413,179 @@ router.get('/profile', auth, async (req: any, res: any) => {
 //   }
 // })
 
+// router.put('/profile', auth, async (req: any, res: any) => {
+//   try {
+//     const { name, age, bio, interests, location } = req.body
+//     console.log('🔄 Updating profile with data:', req.body)
+
+//     const updateData: any = {}
+//     if (name) updateData.name = name
+//     if (age) updateData.age = parseInt(age)
+//     if (bio !== undefined) updateData.bio = bio
+//     if (interests) updateData.interests = interests
+
+//     // ✅ Store location in a separate field instead of appending to bio
+//     if (location !== undefined) {
+//       updateData.location = location.trim() // Store in separate location field
+//       console.log('📍 Location to store:', location)
+//     }
+
+//     console.log('📝 Final update data:', updateData)
+
+//     const user = await User.findByIdAndUpdate(
+//       req.user.id,
+//       { $set: updateData },
+//       { new: true, runValidators: true }
+//     ).select('-password -otp -resetPasswordOTP')
+
+//     if (!user) {
+//       return res.status(404).json({ message: 'User not found' })
+//     }
+
+//     console.log('✅ Profile updated successfully')
+//     res.json(user)
+//   } catch (error: any) {
+//     console.error('❌ Profile update error:', error)
+
+//     if (error.name === 'ValidationError') {
+//       const errors = Object.values(error.errors).map((err: any) => err.message)
+//       return res.status(400).json({
+//         message: 'Validation error',
+//         errors,
+//       })
+//     }
+
+//     if (error.code === 11000) {
+//       return res.status(400).json({
+//         message: 'Email already exists',
+//       })
+//     }
+
+//     res.status(500).json({
+//       message: 'Server error',
+//       error: error.message,
+//     })
+//   }
+// })
+
+// router.put('/profile', auth, async (req: any, res: any) => {
+//   try {
+//     const { name, age, bio, interests, location, gender } = req.body
+//     console.log('🔄 Updating profile with data:', req.body)
+
+//     // Validate required fields
+//     if (!name || !name.trim()) {
+//       return res.status(400).json({
+//         message: 'Name is required',
+//       })
+//     }
+
+//     const updateData: any = {
+//       name: name.trim(),
+//     }
+
+//     if (age) {
+//       const ageNum = parseInt(age)
+//       if (ageNum < 18 || ageNum > 100) {
+//         return res.status(400).json({
+//           message: 'Age must be between 18 and 100',
+//         })
+//       }
+//       updateData.age = ageNum
+//     }
+
+//     if (bio !== undefined) updateData.bio = bio.trim()
+//     if (interests) updateData.interests = interests
+//     if (gender) updateData.gender = gender
+
+//     // Store location in a separate field
+//     if (location !== undefined) {
+//       updateData.location = location.trim()
+//       console.log('📍 Location to store:', location)
+//     }
+
+//     console.log('📝 Final update data:', updateData)
+
+//     const user = await User.findByIdAndUpdate(
+//       req.user.id,
+//       { $set: updateData },
+//       { new: true, runValidators: true }
+//     ).select('-password -otp -resetPasswordOTP')
+
+//     if (!user) {
+//       return res.status(404).json({ message: 'User not found' })
+//     }
+
+//     console.log('✅ Profile updated successfully')
+//     res.json(user)
+//   } catch (error: any) {
+//     console.error('❌ Profile update error:', error)
+
+//     if (error.name === 'ValidationError') {
+//       const errors = Object.values(error.errors).map((err: any) => err.message)
+//       return res.status(400).json({
+//         message: 'Validation error',
+//         errors,
+//       })
+//     }
+
+//     if (error.code === 11000) {
+//       return res.status(400).json({
+//         message: 'Email already exists',
+//       })
+//     }
+
+//     // Make sure to always return a proper JSON response
+//     res.status(500).json({
+//       message: 'Server error',
+//       error: error.message,
+//     })
+//   }
+// })
 router.put('/profile', auth, async (req: any, res: any) => {
   try {
-    const { name, age, bio, interests, location } = req.body
+    const { name, age, bio, interests, location, gender, latitude, longitude } =
+      req.body
     console.log('🔄 Updating profile with data:', req.body)
 
-    const updateData: any = {}
-    if (name) updateData.name = name
-    if (age) updateData.age = parseInt(age)
-    if (bio !== undefined) updateData.bio = bio
-    if (interests) updateData.interests = interests
+    // Validate required fields
+    if (!name || !name.trim()) {
+      return res.status(400).json({
+        message: 'Name is required',
+      })
+    }
 
-    // ✅ Store location in a separate field instead of appending to bio
+    const updateData: any = {
+      name: name.trim(),
+    }
+
+    if (age) {
+      const ageNum = parseInt(age)
+      if (ageNum < 18 || ageNum > 100) {
+        return res.status(400).json({
+          message: 'Age must be between 18 and 100',
+        })
+      }
+      updateData.age = ageNum
+    }
+
+    if (bio !== undefined) updateData.bio = bio.trim()
+    if (interests) updateData.interests = interests
+    if (gender) updateData.gender = gender
+
+    // Store location in a separate field
     if (location !== undefined) {
-      updateData.location = location.trim() // Store in separate location field
+      updateData.location = location.trim()
       console.log('📍 Location to store:', location)
+    }
+
+    // ADD THIS: Update geoLocation if coordinates are provided
+    if (latitude !== undefined && longitude !== undefined) {
+      console.log('🗺️ Updating coordinates:', { latitude, longitude })
+      updateData.geoLocation = {
+        type: 'Point',
+        coordinates: [parseFloat(longitude), parseFloat(latitude)],
+      }
     }
 
     console.log('📝 Final update data:', updateData)
@@ -461,13 +619,13 @@ router.put('/profile', auth, async (req: any, res: any) => {
       })
     }
 
+    // Make sure to always return a proper JSON response
     res.status(500).json({
       message: 'Server error',
       error: error.message,
     })
   }
 })
-
 // Upload profile photos
 // router.post(
 //   '/profile/photos',

@@ -4,7 +4,6 @@ const { Schema, Document } = mongoose
 import type { Model } from 'mongoose' // type import
 
 export interface IUser extends Document {
-  // _id: string
   email: string
   password?: string
   name: string
@@ -29,11 +28,11 @@ export interface IUser extends Document {
   otpExpires?: Date
   resetPasswordOTP?: string
   resetPasswordExpires?: Date
+  lastActive?: Date
 }
 
 const UserSchema = new Schema(
   {
-    // _id: { type: String },
     email: { type: String, unique: true, required: true },
     password: { type: String },
     name: { type: String, required: true },
@@ -42,7 +41,7 @@ const UserSchema = new Schema(
     age: { type: Number, required: false },
     gender: {
       type: String,
-      enum: ['male', 'female', 'other'],
+      enum: ['Male', 'Female', 'Other'],
       required: false,
     },
     geoLocation: {
@@ -70,6 +69,10 @@ const UserSchema = new Schema(
     otpExpires: { type: Date },
     resetPasswordOTP: { type: String },
     resetPasswordExpires: { type: Date },
+    lastActive: {
+      type: Date,
+      default: Date.now,
+    },
   },
   { timestamps: true }
 )

@@ -33,6 +33,8 @@ app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')))
 //
 const authRoutes = require('./routes/auth')
 app.use('/api/auth', authRoutes)
+app.use('/api/users', require('./routes/recommendations'))
+app.use('/api/swipes', require('./routes/swipes'))
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
