@@ -98,6 +98,7 @@ interface DiscoveryState {
     likedUsers: string[]
     passedUsers: string[]
   }
+  loadingSwipeHistory: boolean
 }
 
 const initialState: DiscoveryState = {
@@ -108,6 +109,7 @@ const initialState: DiscoveryState = {
     likedUsers: [],
     passedUsers: [],
   },
+  loadingSwipeHistory: false,
 }
 
 const discoverySlice = createSlice({
@@ -116,23 +118,36 @@ const discoverySlice = createSlice({
   reducers: {
     getRecommendationsRequest: (
       state,
-      action: PayloadAction<{ latitude?: number; longitude?: number }>
+      action: PayloadAction<{
+        latitude?: number
+        longitude?: number
+        userGender?: string
+      }>
     ) => {
       state.loading = true
       state.error = null
     },
+    // getRecommendationsSuccess: (
+    //   state,
+    //   action: PayloadAction<{ users: UserProfile[] }>
+    // ) => {
+    //   state.loading = false
+
+    //   // Filter out liked users but keep passed users
+    //   const filteredUsers = action.payload.users.filter(
+    //     (user) => !state.swipeHistory.likedUsers.includes(user._id)
+    //   )
+
+    //   state.recommendedUsers = filteredUsers
+    //   state.error = null
+    // }
     getRecommendationsSuccess: (
       state,
       action: PayloadAction<{ users: UserProfile[] }>
     ) => {
       state.loading = false
-
-      // Filter out liked users but keep passed users
-      const filteredUsers = action.payload.users.filter(
-        (user) => !state.swipeHistory.likedUsers.includes(user._id)
-      )
-
-      state.recommendedUsers = filteredUsers
+      // REMOVE the filtering - show ALL users including liked ones
+      state.recommendedUsers = action.payload.users
       state.error = null
     },
     getRecommendationsFailure: (state, action: PayloadAction<string>) => {
@@ -178,6 +193,23 @@ const discoverySlice = createSlice({
     clearError: (state) => {
       state.error = null
     },
+    getSwipeHistoryRequest: (state) => {
+      state.loadingSwipeHistory = true
+    },
+    getSwipeHistorySuccess: (
+      state,
+      action: PayloadAction<{
+        likedUsers: string[]
+        passedUsers: string[]
+      }>
+    ) => {
+      state.loadingSwipeHistory = false
+      state.swipeHistory = action.payload
+    },
+    getSwipeHistoryFailure: (state, action: PayloadAction<string>) => {
+      state.loadingSwipeHistory = false
+      state.error = action.payload
+    },
   },
 })
 
@@ -185,6 +217,9 @@ export const {
   getRecommendationsRequest,
   getRecommendationsSuccess,
   getRecommendationsFailure,
+  getSwipeHistoryRequest,
+  getSwipeHistorySuccess,
+  getSwipeHistoryFailure,
   addLikedUser,
   addPassedUser,
   updatePassToLike,

@@ -56,33 +56,47 @@ function* handleVerifyOtp(
 // function* handleLogin(action: ReturnType<typeof loginRequest>): SagaIterator {
 //   try {
 //     const response = yield call(axios.post, '/api/auth/login', action.payload)
-//     // yield put(loginSuccess(response.data))
+//     console.log('✅ Login response:', response.data)
+
 //     if (response.data?.user) {
-//       yield put(loginSuccess(response.data))
+//       // Make sure we're storing the complete user object
+//       yield put(loginSuccess(response.data.user))
 //     } else {
 //       yield put(loginFailure(response.data?.message || 'Login failed'))
 //     }
 //   } catch (error: any) {
+//     console.error('❌ Login error:', error.response?.data)
 //     yield put(loginFailure(error.response?.data?.message || 'Login failed'))
 //   }
 // }
-// sagas/authSaga.ts - Update handleLogin
 function* handleLogin(action: ReturnType<typeof loginRequest>): SagaIterator {
   try {
     const response = yield call(axios.post, '/api/auth/login', action.payload)
-    console.log('✅ Login response:', response.data)
+    console.log('✅ Login successful:', response.data)
 
     if (response.data?.user) {
-      // Make sure we're storing the complete user object
       yield put(loginSuccess(response.data.user))
     } else {
       yield put(loginFailure(response.data?.message || 'Login failed'))
     }
   } catch (error: any) {
-    console.error('❌ Login error:', error.response?.data)
-    yield put(loginFailure(error.response?.data?.message || 'Login failed'))
+    // Handle AxiosError with status code 400
+    if (error?.response?.status === 400) {
+      // This is the expected case for wrong credentials
+      const errorMessage =
+        error.response?.data?.message || 'Invalid email or password'
+      console.log('🔄 Login failed (expected):', errorMessage)
+      yield put(loginFailure(errorMessage))
+    } else {
+      // Handle other types of errors
+      console.error('❌ Unexpected login error:', error)
+      const errorMessage =
+        error.response?.data?.message || error.message || 'Login failed'
+      yield put(loginFailure(errorMessage))
+    }
   }
 }
+
 function* handleForgotPassword(
   action: ReturnType<typeof forgotPasswordRequest>
 ): SagaIterator {

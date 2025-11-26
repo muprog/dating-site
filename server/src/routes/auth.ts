@@ -136,18 +136,75 @@ router.post(
   }
 )
 
+// router.post('/login', async (req: Request, res: Response) => {
+//   try {
+//     const { email, password } = req.body
+
+//     const user = await User.findOne({ email })
+//     if (!user) {
+//       return res.status(400).json({ message: 'Invalid email or password' })
+//     }
+//     if (!user.password) {
+//       return res
+//         .status(400)
+//         .json({ message: 'Please log in with Google or Facebook' })
+//     }
+
+//     const isMatch = await bcrypt.compare(password, user.password)
+//     if (!isMatch) {
+//       return res.status(400).json({ message: 'Invalid email or password' })
+//     }
+
+//     // Generate JWT
+//     const token = jwt.sign(
+//       { id: user._id, email: user.email },
+//       process.env.JWT_SECRET!,
+//       { expiresIn: '1h' }
+//     )
+
+//     // Store token in cookie (httpOnly = cannot be accessed by JS)
+//     res.cookie('token', token, {
+//       httpOnly: true,
+//       secure: process.env.NODE_ENV === 'production', // only https in prod
+//       sameSite: 'strict',
+//       maxAge: 60 * 60 * 1000, // 1 hour
+//     })
+
+//     // You can still send user info in JSON (but not the token)
+//     res.json({
+//       message: 'Login successful',
+//       user: {
+//         id: user._id,
+//         name: user.name,
+//         email: user.email,
+//       },
+//     })
+//   } catch (err) {
+//     console.error(err)
+//     res.status(500).json({ message: 'Server error' })
+//   }
+// })
+
 router.post('/login', async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body
+
+    // Validate input
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ message: 'Email and password are required' })
+    }
 
     const user = await User.findOne({ email })
     if (!user) {
       return res.status(400).json({ message: 'Invalid email or password' })
     }
+
     if (!user.password) {
-      return res
-        .status(400)
-        .json({ message: 'Please log in with Google or Facebook' })
+      return res.status(400).json({
+        message: 'Please log in with Google or Facebook',
+      })
     }
 
     const isMatch = await bcrypt.compare(password, user.password)
@@ -162,15 +219,14 @@ router.post('/login', async (req: Request, res: Response) => {
       { expiresIn: '1h' }
     )
 
-    // Store token in cookie (httpOnly = cannot be accessed by JS)
+    // Store token in cookie
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // only https in prod
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 60 * 60 * 1000, // 1 hour
+      maxAge: 60 * 60 * 1000,
     })
 
-    // You can still send user info in JSON (but not the token)
     res.json({
       message: 'Login successful',
       user: {
@@ -180,7 +236,7 @@ router.post('/login', async (req: Request, res: Response) => {
       },
     })
   } catch (err) {
-    console.error(err)
+    console.error('Login error:', err)
     res.status(500).json({ message: 'Server error' })
   }
 })

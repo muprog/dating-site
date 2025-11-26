@@ -76,9 +76,14 @@ const authSlice = createSlice({
       console.log('✅ User ID:', state.user?.id)
       console.log('✅ User _id:', state.user?._id)
     },
+    // loginFailure: (state, action: PayloadAction<string>) => {
+    //   state.loading = false
+    //   state.user = action.payload
+    //   state.error = action.payload
+    // }
     loginFailure: (state, action: PayloadAction<string>) => {
       state.loading = false
-      state.user = action.payload
+      state.user = null // Remove this line - you're setting user to the error message!
       state.error = action.payload
     },
     forgotPasswordRequest: (
