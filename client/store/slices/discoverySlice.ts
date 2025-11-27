@@ -121,7 +121,7 @@ const discoverySlice = createSlice({
       action: PayloadAction<{
         latitude?: number
         longitude?: number
-        userGender?: string
+        gender?: string
       }>
     ) => {
       state.loading = true
