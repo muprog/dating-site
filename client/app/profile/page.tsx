@@ -735,7 +735,7 @@
 //         </div>
 
 //         {/* Photos Section */}
-//         <div className='bg-white rounded-3xl shadow-lg border border-gray-100 p-8'>
+//         <div className='bg-black/50 rounded-3xl shadow-lg border border-gray-100 p-8'>
 //           <div className='flex justify-between items-center mb-6'>
 //             <h3 className='text-xl font-semibold text-gray-900'>Photos</h3>
 //             <label className='bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-pink-600 hover:to-purple-700 transition-all cursor-pointer disabled:opacity-50 font-medium shadow-sm'>
@@ -829,7 +829,7 @@
 //                     e.stopPropagation()
 //                     navigateGallery('prev')
 //                   }}
-//                   className='absolute left-4 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-full w-12 h-12 flex items-center justify-center transition-all duration-200 backdrop-blur-sm border border-white border-opacity-20'
+//                   className='absolute left-4 bg-black/10 bg-opacity-20 hover:bg-opacity-30 text-white rounded-full w-12 h-12 flex items-center justify-center transition-all duration-200 backdrop-blur-sm border border-white border-opacity-20'
 //                 >
 //                   <svg
 //                     className='w-6 h-6'
@@ -850,7 +850,7 @@
 //                     e.stopPropagation()
 //                     navigateGallery('next')
 //                   }}
-//                   className='absolute right-4 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-full w-12 h-12 flex items-center justify-center transition-all duration-200 backdrop-blur-sm border border-white border-opacity-20'
+//                   className='absolute right-4 bg-black/10 bg-opacity-20 hover:bg-opacity-30 text-white rounded-full w-12 h-12 flex items-center justify-center transition-all duration-200 backdrop-blur-sm border border-white border-opacity-20'
 //                 >
 //                   <svg
 //                     className='w-6 h-6'
@@ -872,7 +872,7 @@
 //             {/* Close Button */}
 //             <button
 //               onClick={closeGallery}
-//               className='absolute top-4 right-4 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-full w-10 h-10 flex items-center justify-center transition-all duration-200 backdrop-blur-sm border border-white border-opacity-20'
+//               className='absolute top-4 right-4 bg-black/50 bg-opacity-20 hover:bg-opacity-30 text-white rounded-full w-10 h-10 flex items-center justify-center transition-all duration-200 backdrop-blur-sm border border-white border-opacity-20'
 //             >
 //               <svg
 //                 className='w-5 h-5'
@@ -896,7 +896,7 @@
 
 //             {/* Thumbnail Strip */}
 //             <div className='absolute bottom-4 left-4 right-4 flex justify-center'>
-//               <div className='flex gap-2 max-w-full overflow-x-auto py-2 px-4 bg-black bg-opacity-30 rounded-2xl backdrop-blur-sm'>
+//               <div className='flex gap-2 max-w-full overflow-x-auto py-2 px-4 bg-black/50 bg-opacity-30 rounded-2xl backdrop-blur-sm'>
 //                 {profileUser.photos.map((photo, index) => (
 //                   <div
 //                     key={index}
@@ -929,7 +929,7 @@
 //                 link.download = `photo-${selectedPhotoIndex + 1}.jpg`
 //                 link.click()
 //               }}
-//               className='absolute top-4 left-4 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-xl px-4 py-2 flex items-center gap-2 transition-all duration-200 backdrop-blur-sm border border-white border-opacity-20 text-sm font-medium'
+//               className='absolute top-4 left-4 bg-black/50 bg-opacity-20 hover:bg-opacity-30 text-white rounded-xl px-4 py-2 flex items-center gap-2 transition-all duration-200 backdrop-blur-sm border border-white border-opacity-20 text-sm font-medium'
 //             >
 //               <svg
 //                 className='w-4 h-4'
@@ -1815,7 +1815,7 @@ const ProfilePage: React.FC = () => {
                     e.stopPropagation()
                     navigateGallery('prev')
                   }}
-                  btnStyle='absolute left-2 sm:left-4 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-full w-8 h-8 sm:w-12 sm:h-12 flex items-center justify-center transition-all duration-200 backdrop-blur-sm border border-white border-opacity-20 p-0 min-w-0'
+                  btnStyle='absolute left-2 sm:left-4 bg-black/50 bg-opacity-20 hover:bg-opacity-30 text-white rounded-full w-8 h-8 sm:w-12 sm:h-12 flex items-center justify-center transition-all duration-200 backdrop-blur-sm border border-white border-opacity-20 p-0 min-w-0'
                 />
                 <Button
                   title={
@@ -1837,7 +1837,7 @@ const ProfilePage: React.FC = () => {
                     e.stopPropagation()
                     navigateGallery('next')
                   }}
-                  btnStyle='absolute right-2 sm:right-4 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-full w-8 h-8 sm:w-12 sm:h-12 flex items-center justify-center transition-all duration-200 backdrop-blur-sm border border-white border-opacity-20 p-0 min-w-0'
+                  btnStyle='absolute right-2 sm:right-4 bg-black/50 bg-opacity-20 hover:bg-opacity-30 text-white rounded-full w-8 h-8 sm:w-12 sm:h-12 flex items-center justify-center transition-all duration-200 backdrop-blur-sm border border-white border-opacity-20 p-0 min-w-0'
                 />
               </>
             )}
@@ -1860,7 +1860,7 @@ const ProfilePage: React.FC = () => {
                 </svg>
               }
               onClick={closeGallery}
-              btnStyle='absolute top-2 sm:top-4 right-2 sm:right-4 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center transition-all duration-200 backdrop-blur-sm border border-white border-opacity-20 p-0 min-w-0'
+              btnStyle='absolute top-2 sm:top-4 right-2 sm:right-4 bg-black/50 bg-opacity-20 hover:bg-opacity-30 text-white rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center transition-all duration-200 backdrop-blur-sm border border-white border-opacity-20 p-0 min-w-0'
             />
 
             {/* Image Counter */}
@@ -1921,7 +1921,7 @@ const ProfilePage: React.FC = () => {
                 link.download = `photo-${selectedPhotoIndex + 1}.jpg`
                 link.click()
               }}
-              btnStyle='absolute top-2 sm:top-4 left-2 sm:left-4 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-lg sm:rounded-xl px-2 sm:px-4 py-1 sm:py-2 flex items-center gap-1 sm:gap-2 transition-all duration-200 backdrop-blur-sm border border-white border-opacity-20 text-xs sm:text-sm font-medium'
+              btnStyle='absolute top-2 sm:top-4 left-2 sm:left-4 bg-black/50 bg-opacity-20 hover:bg-opacity-30 text-white rounded-lg sm:rounded-xl px-2 sm:px-4 py-1 sm:py-2 flex items-center gap-1 sm:gap-2 transition-all duration-200 backdrop-blur-sm border border-white border-opacity-20 text-xs sm:text-sm font-medium'
             />
           </div>
         </div>

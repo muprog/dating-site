@@ -33,6 +33,7 @@ import profileReducer from './slices/profileSlice'
 import discoveryReducer from './slices/discoverySlice'
 import swipeReducer from './slices/swipeSlice'
 import rootSaga from './sagas/rootSaga'
+import matchReducer from './slices/matchSlice'
 
 const sagaMiddleware = createSagaMiddleware()
 
@@ -42,6 +43,7 @@ export const store = configureStore({
     profile: profileReducer,
     discovery: discoveryReducer, // Added discovery slice
     swipe: swipeReducer, // Added swipe slice
+    match: matchReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
