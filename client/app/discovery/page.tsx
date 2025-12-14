@@ -1,5 +1,2405 @@
+// 'use client'
+// import React, { useEffect, useState, useMemo } from 'react'
+// import { useSelector, useDispatch } from 'react-redux'
+// import { useRouter } from 'next/navigation'
+// import { RootState, AppDispatch } from '../../store/store'
+// import {
+//   getRecommendationsRequest,
+//   getSwipeHistoryRequest,
+//   addLikedUser,
+//   addPassedUser,
+//   updatePassToLike,
+//   updateLikeToPass,
+// } from '../../store/slices/discoverySlice'
+// import { createSwipeRequest } from '../../store/slices/swipeSlice'
+// import { checkAuthRequest, logoutRequest } from '../../store/slices/authSlice'
+// import { getProfileRequest } from '../../store/slices/profileSlice'
+// import Button from '../../components/Button'
+
+// interface UserProfile {
+//   _id: string
+//   name: string
+//   age: number
+//   bio: string
+//   photos: string[]
+//   gender: string
+//   interests: string[]
+//   location: string
+//   geoLocation?: {
+//     type: string
+//     coordinates: [number, number] // [longitude, latitude]
+//   }
+//   distance?: number
+// }
+
+// // Fisher-Yates shuffle algorithm for random ordering
+// const shuffleArray = <T,>(array: T[]): T[] => {
+//   const shuffled = [...array]
+//   for (let i = shuffled.length - 1; i > 0; i--) {
+//     const j = Math.floor(Math.random() * (i + 1))
+//     ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+//   }
+//   return shuffled
+// }
+
+// // Haversine formula to calculate distance between two coordinates
+// const calculateDistance = (
+//   lat1: number,
+//   lon1: number,
+//   lat2: number,
+//   lon2: number
+// ): number => {
+//   const R = 6371 // Earth's radius in kilometers
+//   const dLat = (lat2 - lat1) * (Math.PI / 180)
+//   const dLon = (lon2 - lon1) * (Math.PI / 180)
+//   const a =
+//     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+//     Math.cos(lat1 * (Math.PI / 180)) *
+//       Math.cos(lat2 * (Math.PI / 180)) *
+//       Math.sin(dLon / 2) *
+//       Math.sin(dLon / 2)
+//   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+//   const distance = R * c
+//   return distance
+// }
+
+// // Format distance for display - only km, no meters
+// const formatDistance = (distance: number): string => {
+//   if (distance < 1) {
+//     return `<1km` // Show <1km for distances less than 1km
+//   } else if (distance < 10) {
+//     return `${distance.toFixed(1)}km` // Show 1 decimal for short distances
+//   } else {
+//     return `${Math.round(distance)}km` // Round for longer distances
+//   }
+// }
+
+// // Helper function to extract coordinates from geoLocation
+// const getCoordinates = (
+//   user: UserProfile
+// ): { latitude: number; longitude: number } | null => {
+//   if (
+//     user.geoLocation &&
+//     user.geoLocation.coordinates &&
+//     user.geoLocation.coordinates.length === 2 &&
+//     user.geoLocation.coordinates[0] !== 0 &&
+//     user.geoLocation.coordinates[1] !== 0
+//   ) {
+//     // geoLocation.coordinates is [longitude, latitude]
+//     return {
+//       longitude: user.geoLocation.coordinates[0],
+//       latitude: user.geoLocation.coordinates[1],
+//     }
+//   }
+//   return null
+// }
+
+// // Loading Screen Component
+// const LoadingScreen = ({ message = 'Loading...' }: { message?: string }) => (
+//   <div className='min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center'>
+//     <div className='text-center'>
+//       <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4'></div>
+//       <p className='text-gray-600'>{message}</p>
+//     </div>
+//   </div>
+// )
+
+// // Error Screen Component
+// const ErrorScreen = ({
+//   error,
+//   onRefresh,
+//   onLogout,
+// }: {
+//   error: string
+//   onRefresh: () => void
+//   onLogout?: () => void
+// }) => (
+//   <div className='min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center'>
+//     <div className='text-center bg-white rounded-3xl p-8 shadow-lg max-w-md mx-4'>
+//       <div className='text-6xl mb-4'>😕</div>
+//       <h2 className='text-2xl font-bold text-gray-900 mb-4'>
+//         Something went wrong
+//       </h2>
+//       <p className='text-gray-600 mb-4'>{error}</p>
+//       <div className='flex gap-3'>
+//         <Button
+//           title='Try Again'
+//           onClick={onRefresh}
+//           btnStyle='flex-1 bg-pink-500 text-white px-4 py-3 rounded-xl hover:bg-pink-600 transition-colors'
+//         />
+//         {onLogout && (
+//           <Button
+//             title='Logout'
+//             onClick={onLogout}
+//             btnStyle='flex-1 bg-red-500 text-white px-4 py-3 rounded-xl hover:bg-red-600 transition-colors'
+//           />
+//         )}
+//       </div>
+//     </div>
+//   </div>
+// )
+
+// // Empty Screen Component
+// const EmptyScreen = ({
+//   onRefresh,
+//   onLogout,
+//   showLikedOnly,
+//   onToggleLikedOnly,
+// }: {
+//   onRefresh: () => void
+//   onLogout?: () => void
+//   showLikedOnly?: boolean
+//   onToggleLikedOnly?: () => void
+// }) => (
+//   <div className='min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center'>
+//     <div className='text-center bg-white rounded-3xl p-8 shadow-lg max-w-md mx-4'>
+//       <div className='text-6xl mb-4'>{showLikedOnly ? '💖' : '😢'}</div>
+//       <h2 className='text-2xl font-bold text-gray-900 mb-4'>
+//         {showLikedOnly ? 'No Liked Profiles Yet' : 'No profiles found'}
+//       </h2>
+//       <p className='text-gray-600 mb-6'>
+//         {showLikedOnly
+//           ? "You haven't liked any profiles yet. Start swiping to build your list!"
+//           : 'No potential matches found in your area.'}
+//       </p>
+//       <div className='flex flex-col gap-3'>
+//         {showLikedOnly && onToggleLikedOnly ? (
+//           <Button
+//             title='Show All Profiles'
+//             onClick={onToggleLikedOnly}
+//             btnStyle='bg-pink-500 text-white px-6 py-3 rounded-xl hover:bg-pink-600 transition-colors'
+//           />
+//         ) : (
+//           <Button
+//             title='Refresh'
+//             onClick={onRefresh}
+//             btnStyle='bg-pink-500 text-white px-6 py-3 rounded-xl hover:bg-pink-600 transition-colors'
+//           />
+//         )}
+//         {onLogout && (
+//           <Button
+//             title='Logout'
+//             onClick={onLogout}
+//             btnStyle='bg-red-500 text-white px-6 py-3 rounded-xl hover:bg-red-600 transition-colors'
+//           />
+//         )}
+//       </div>
+//     </div>
+//   </div>
+// )
+
+// // Match Modal Component
+// const MatchModal = ({
+//   lastMatch,
+//   onClose,
+// }: {
+//   lastMatch: any
+//   onClose: () => void
+// }) => (
+//   <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4'>
+//     <div className='bg-white rounded-3xl p-8 text-center max-w-sm w-full'>
+//       <div className='text-6xl mb-4'>🎉</div>
+//       <h3 className='text-2xl font-bold text-gray-900 mb-2'>It's a Match!</h3>
+//       <p className='text-gray-600 mb-4'>You matched with {lastMatch.name}</p>
+//       <Button
+//         title='Continue Swiping'
+//         onClick={onClose}
+//         btnStyle='bg-pink-500 text-white px-6 py-2 rounded-xl hover:bg-pink-600 transition-colors'
+//       />
+//     </div>
+//   </div>
+// )
+
+// // Image Modal Component
+// const ImageModal = ({
+//   photos,
+//   currentPhotoIndex,
+//   onClose,
+//   onNext,
+//   onPrev,
+//   userName,
+// }: {
+//   photos: string[]
+//   currentPhotoIndex: number
+//   onClose: () => void
+//   onNext: () => void
+//   onPrev: () => void
+//   userName: string
+// }) => (
+//   <div className='fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4'>
+//     <div className='relative max-w-4xl max-h-full w-full'>
+//       <Button
+//         title='✕'
+//         onClick={onClose}
+//         btnStyle='absolute top-4 right-4 z-10 text-white text-2xl bg-black/50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-black/70 transition-colors p-0 min-w-0'
+//       />
+
+//       {photos.length > 1 && (
+//         <>
+//           <Button
+//             title='‹'
+//             onClick={onPrev}
+//             btnStyle='absolute left-4 top-1/2 transform -translate-y-1/2 z-10 text-white text-2xl bg-black/50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-black/70 transition-colors p-0 min-w-0'
+//             disabled={currentPhotoIndex === 0}
+//           />
+//           <Button
+//             title='›'
+//             onClick={onNext}
+//             btnStyle='absolute right-4 top-1/2 transform -translate-y-1/2 z-10 text-white text-2xl bg-black/50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-black/70 transition-colors p-0 min-w-0'
+//             disabled={currentPhotoIndex === photos.length - 1}
+//           />
+//         </>
+//       )}
+
+//       <div className='flex flex-col items-center'>
+//         <img
+//           src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${photos[currentPhotoIndex]}`}
+//           alt={`${userName} - Photo ${currentPhotoIndex + 1}`}
+//           className='max-w-full max-h-[80vh] object-contain rounded-lg'
+//         />
+//         <div className='text-white mt-4 text-center'>
+//           <p>
+//             {currentPhotoIndex + 1} of {photos.length}
+//           </p>
+//         </div>
+//       </div>
+//     </div>
+//   </div>
+// )
+
+// // Action Buttons Component
+// const ActionButtons = ({
+//   onPass,
+//   onLike,
+//   isLiked,
+//   disabled,
+//   showLikedOnly,
+// }: any) => (
+//   <div className='flex justify-center gap-8 mt-8 pb-8'>
+//     {!showLikedOnly ? (
+//       // Normal mode: Show both pass and like buttons
+//       <>
+//         <Button
+//           title={isLiked ? '💔 Pass' : '❌ Pass'}
+//           onClick={onPass}
+//           disabled={disabled}
+//           btnStyle={`w-24 h-16 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 border-2 disabled:opacity-50 font-medium text-base p-0 min-w-0 ${
+//             isLiked
+//               ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100 hover:border-red-300'
+//               : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300'
+//           }`}
+//         />
+//         <Button
+//           title={isLiked ? '💔 Unlike' : '💖 Like'}
+//           onClick={onLike}
+//           disabled={disabled}
+//           btnStyle={`w-24 h-16 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 border-2 disabled:opacity-50 font-medium text-base p-0 min-w-0 ${
+//             isLiked
+//               ? 'bg-gray-100 border-gray-200 text-gray-700 hover:bg-gray-200'
+//               : 'bg-pink-500 border-pink-500 text-white hover:bg-pink-600'
+//           }`}
+//         />
+//       </>
+//     ) : (
+//       // Liked only mode: Show only unlike button
+//       <Button
+//         title='💔 Remove'
+//         onClick={onLike} // This will unlike the profile
+//         disabled={disabled}
+//         btnStyle='w-32 h-16 bg-red-500 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-red-600 transition-colors disabled:opacity-50 font-medium text-base'
+//       />
+//     )}
+//   </div>
+// )
+
+// // User Card Component
+// const UserCard = ({
+//   user,
+//   isLiked,
+//   currentPhotoIndex,
+//   hasMultiplePhotos,
+//   onPhotoSwipe,
+//   onPrevPhoto,
+//   onNextPhoto,
+//   onImageClick,
+//   showLikedOnly,
+// }: any) => (
+//   <div className='bg-white rounded-3xl shadow-lg overflow-hidden'>
+//     <div className='relative h-96'>
+//       {user.photos && user.photos.length > 0 ? (
+//         <>
+//           <div
+//             className='w-full h-full cursor-pointer relative'
+//             onClick={onPhotoSwipe}
+//           >
+//             <img
+//               src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${user.photos[currentPhotoIndex]}`}
+//               alt={`${user.name} - Photo ${currentPhotoIndex + 1}`}
+//               className='w-full h-full object-cover cursor-zoom-in'
+//               onClick={(e) => {
+//                 e.stopPropagation()
+//                 onImageClick()
+//               }}
+//             />
+
+//             {/* Distance Display - Top right corner, clean format */}
+//             {user.distance !== undefined && (
+//               <div className='absolute top-4 right-4 bg-black/70 text-white px-3 py-2 rounded-full text-sm font-medium backdrop-blur-sm z-10'>
+//                 {formatDistance(user.distance)}
+//               </div>
+//             )}
+
+//             {/* Show liked badge */}
+//             {isLiked && (
+//               <div className='absolute top-4 left-4 bg-pink-500 text-white px-3 py-2 rounded-full text-sm font-medium backdrop-blur-sm z-10'>
+//                 ❤️ Liked
+//               </div>
+//             )}
+
+//             {hasMultiplePhotos && (
+//               <>
+//                 <Button
+//                   title='‹'
+//                   onClick={(e) => {
+//                     e.stopPropagation()
+//                     onPrevPhoto()
+//                   }}
+//                   btnStyle='absolute left-2 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-black/10 bg-opacity-50 rounded-full flex items-center justify-center text-white hover:bg-opacity-70 transition-opacity p-0 min-w-0'
+//                 />
+//                 <Button
+//                   title='›'
+//                   onClick={(e) => {
+//                     e.stopPropagation()
+//                     onNextPhoto()
+//                   }}
+//                   btnStyle='absolute right-2 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-black/10 bg-opacity-50 rounded-full flex items-center justify-center text-white hover:bg-opacity-70 transition-opacity p-0 min-w-0'
+//                 />
+//               </>
+//             )}
+//           </div>
+//           {hasMultiplePhotos && (
+//             <>
+//               <div className='absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2'>
+//                 {user.photos.map((_: any, index: number) => (
+//                   <div
+//                     key={index}
+//                     className={`w-2 h-2 rounded-full transition-all duration-300 ${
+//                       index === currentPhotoIndex
+//                         ? 'bg-white scale-125'
+//                         : 'bg-white bg-opacity-50'
+//                     }`}
+//                   />
+//                 ))}
+//               </div>
+//               <div className='absolute top-4 left-4 bg-black/10 bg-opacity-50 text-white px-2 py-1 rounded-full text-xs'>
+//                 {currentPhotoIndex + 1} / {user.photos.length}
+//               </div>
+//             </>
+//           )}
+//         </>
+//       ) : (
+//         <div className='w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-lg'>
+//           No Photo
+//         </div>
+//       )}
+//     </div>
+//     <div className='p-6'>
+//       <div className='flex justify-between items-start mb-4'>
+//         <div>
+//           <h2 className='text-2xl font-bold text-gray-900'>
+//             {user.name}, {user.age}
+//           </h2>
+//           <p className='text-gray-600'>{user.gender}</p>
+//         </div>
+//         {showLikedOnly && (
+//           <div className='bg-green-500 text-white px-3 py-1 rounded-full text-sm'>
+//             💖 Liked
+//           </div>
+//         )}
+//       </div>
+//       {user.bio && (
+//         <p className='text-gray-700 mb-4 leading-relaxed'>{user.bio}</p>
+//       )}
+//       {user.location && (
+//         <p className='text-gray-600 text-sm mb-4 flex items-center gap-1'>
+//           📍 {user.location}
+//         </p>
+//       )}
+//       {user.interests && user.interests.length > 0 && (
+//         <div className='mb-2'>
+//           <h3 className='text-sm font-semibold text-gray-900 mb-2'>
+//             Interests
+//           </h3>
+//           <div className='flex flex-wrap gap-2'>
+//             {user.interests
+//               .slice(0, 4)
+//               .map((interest: string, index: number) => (
+//                 <span
+//                   key={index}
+//                   className='bg-pink-100 text-pink-800 px-3 py-1 rounded-full text-xs font-medium'
+//                 >
+//                   {interest}
+//                 </span>
+//               ))}
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   </div>
+// )
+
+// const DiscoveryPage: React.FC = () => {
+//   const dispatch = useDispatch<AppDispatch>()
+//   const router = useRouter()
+
+//   const { user: authUser, loading: authLoading } = useSelector(
+//     (state: RootState) => state.auth
+//   )
+//   const {
+//     recommendedUsers,
+//     loading: recommendationsLoading,
+//     error: recommendationsError,
+//     swipeHistory,
+//     loadingSwipeHistory,
+//   } = useSelector((state: RootState) => state.discovery)
+//   const { loading: swipeLoading, lastMatch } = useSelector(
+//     (state: RootState) => state.swipe
+//   )
+//   const { user: profileUser, loading: profileLoading } = useSelector(
+//     (state: RootState) => state.profile
+//   )
+
+//   const [currentIndex, setCurrentIndex] = useState(0)
+//   const [showMatchModal, setShowMatchModal] = useState(false)
+//   const [hasFetched, setHasFetched] = useState(false)
+//   const [localLikedUsers, setLocalLikedUsers] = useState<Set<string>>(new Set())
+//   const [localPassedUsers, setLocalPassedUsers] = useState<Set<string>>(
+//     new Set()
+//   )
+//   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
+//   const [shuffledUsers, setShuffledUsers] = useState<UserProfile[]>([])
+//   const [showImageModal, setShowImageModal] = useState(false)
+//   const [userLocation, setUserLocation] = useState<{
+//     latitude: number
+//     longitude: number
+//   } | null>(null)
+//   const [showLikedOnly, setShowLikedOnly] = useState(false)
+//   const [isInitialLoad, setIsInitialLoad] = useState(true)
+
+//   // Logout modal state
+//   const [showLogoutModal, setShowLogoutModal] = useState(false)
+
+//   // Get gender from profile
+//   const currentUserGender = useMemo(() => {
+//     if (profileUser?.gender) {
+//       return profileUser.gender.toLowerCase().trim()
+//     }
+//     return null
+//   }, [profileUser])
+
+//   // Calculate distances for users when location data is available
+//   const usersWithDistance = useMemo(() => {
+//     if (!userLocation || !shuffledUsers.length) return shuffledUsers
+
+//     return shuffledUsers.map((user) => {
+//       const userCoords = getCoordinates(user)
+//       if (userCoords) {
+//         const distance = calculateDistance(
+//           userLocation.latitude,
+//           userLocation.longitude,
+//           userCoords.latitude,
+//           userCoords.longitude
+//         )
+//         return { ...user, distance }
+//       }
+//       return user
+//     })
+//   }, [shuffledUsers, userLocation])
+
+//   // Filter users based on gender preference from profile AND use shuffled order
+//   const filteredUsers = useMemo(() => {
+//     if (!currentUserGender || !usersWithDistance.length)
+//       return usersWithDistance
+
+//     const filtered = usersWithDistance.filter((user) => {
+//       const userGender = user.gender?.toLowerCase().trim()
+
+//       // Male users see only females
+//       if (currentUserGender === 'male') {
+//         return userGender === 'female'
+//       }
+//       // Female users see only males
+//       else if (currentUserGender === 'female') {
+//         return userGender === 'male'
+//       }
+//       // For 'other' or any other gender, show all profiles
+//       return true
+//     })
+
+//     return filtered
+//   }, [usersWithDistance, currentUserGender])
+
+//   // Filter to show only liked users when showLikedOnly is true
+//   const displayUsers = useMemo(() => {
+//     if (!showLikedOnly) return filteredUsers
+
+//     // Filter to only show users that have been liked
+//     const likedUsers = filteredUsers.filter((user) =>
+//       localLikedUsers.has(user._id)
+//     )
+
+//     return likedUsers
+//   }, [filteredUsers, showLikedOnly, localLikedUsers])
+
+//   // Get the count of liked users for the button badge
+//   const likedUsersCount = useMemo(() => {
+//     return filteredUsers.filter((user) => localLikedUsers.has(user._id)).length
+//   }, [filteredUsers, localLikedUsers])
+
+//   // Check authentication
+//   useEffect(() => {
+//     if (!authUser) {
+//       dispatch(checkAuthRequest())
+//     }
+//   }, [authUser, dispatch])
+
+//   // Fetch profile when auth user is available
+//   useEffect(() => {
+//     if (authUser && !profileUser && !profileLoading) {
+//       dispatch(getProfileRequest())
+//     }
+//   }, [authUser, profileUser, profileLoading, dispatch])
+
+//   // Initialize swipe history when data is available - FIXED: Update both sets properly
+//   useEffect(() => {
+//     setLocalLikedUsers(new Set(swipeHistory.likedUsers || []))
+//     setLocalPassedUsers(new Set(swipeHistory.passedUsers || []))
+//   }, [swipeHistory.likedUsers, swipeHistory.passedUsers])
+
+//   // Reset photo index when current index changes
+//   useEffect(() => {
+//     setCurrentPhotoIndex(0)
+//   }, [currentIndex])
+
+//   // Reset to first profile when switching between modes
+//   useEffect(() => {
+//     setCurrentIndex(0)
+//     setCurrentPhotoIndex(0)
+//   }, [showLikedOnly])
+
+//   // MAIN DATA FETCHING LOGIC - FIXED with error handling
+//   useEffect(() => {
+//     // Only fetch if we have auth user and profile, and haven't fetched yet
+//     if (authUser && profileUser && !hasFetched && isInitialLoad) {
+//       console.log('🔄 Starting data fetch process...')
+
+//       // Set loading state
+//       setIsInitialLoad(true)
+
+//       // First, get swipe history
+//       dispatch(getSwipeHistoryRequest())
+
+//       // Then get user location and recommendations
+//       const getLocationAndFetch = () => {
+//         if (navigator.geolocation) {
+//           navigator.geolocation.getCurrentPosition(
+//             (position) => {
+//               const { latitude, longitude } = position.coords
+//               setUserLocation({ latitude, longitude })
+//               console.log('📍 User location captured:', { latitude, longitude })
+
+//               // Fetch recommendations
+//               dispatch(
+//                 getRecommendationsRequest({
+//                   latitude,
+//                   longitude,
+//                 })
+//               )
+
+//               setHasFetched(true)
+//             },
+//             (error) => {
+//               console.error(
+//                 '❌ Error getting user location:',
+//                 error.message || error
+//               )
+//               setUserLocation(null)
+
+//               // Fetch recommendations without location
+//               dispatch(getRecommendationsRequest({}))
+
+//               setHasFetched(true)
+//             },
+//             {
+//               enableHighAccuracy: true,
+//               timeout: 10000,
+//               maximumAge: 60000,
+//             }
+//           )
+//         } else {
+//           console.log('📍 Geolocation not supported')
+//           setUserLocation(null)
+
+//           // Fetch recommendations without location
+//           dispatch(getRecommendationsRequest({}))
+
+//           setHasFetched(true)
+//         }
+//       }
+
+//       getLocationAndFetch()
+//     }
+//   }, [authUser, profileUser, hasFetched, isInitialLoad, dispatch])
+
+//   // Shuffle users when recommendations are loaded
+//   useEffect(() => {
+//     if (recommendedUsers.length > 0 && isInitialLoad) {
+//       console.log('🎲 Shuffling recommended users:', recommendedUsers.length)
+//       const shuffled = shuffleArray(recommendedUsers as UserProfile[])
+//       setShuffledUsers(shuffled)
+//       setIsInitialLoad(false)
+//     }
+//   }, [recommendedUsers, isInitialLoad])
+
+//   // Handle match modal
+//   useEffect(() => {
+//     if (lastMatch) {
+//       setShowMatchModal(true)
+//       const timer = setTimeout(() => {
+//         setShowMatchModal(false)
+//       }, 3000)
+//       return () => clearTimeout(timer)
+//     }
+//   }, [lastMatch])
+
+//   // Reset current index when filtered users change
+//   useEffect(() => {
+//     if (displayUsers.length > 0 && currentIndex >= displayUsers.length) {
+//       setCurrentIndex(0)
+//     }
+//   }, [displayUsers, currentIndex])
+
+//   // Navigate to next profile (circular navigation)
+//   const goToNextProfile = () => {
+//     if (displayUsers.length === 0) return
+
+//     if (currentIndex < displayUsers.length - 1) {
+//       // Go to next profile
+//       setCurrentIndex((prev) => prev + 1)
+//     } else {
+//       // Circular navigation: go back to first profile
+//       setCurrentIndex(0)
+//     }
+//   }
+
+//   // Navigate to previous profile (circular navigation)
+//   const goToPreviousProfile = () => {
+//     if (displayUsers.length === 0) return
+
+//     if (currentIndex > 0) {
+//       // Go to previous profile
+//       setCurrentIndex((prev) => prev - 1)
+//     } else {
+//       // Circular navigation: go to last profile
+//       setCurrentIndex(displayUsers.length - 1)
+//     }
+//   }
+
+//   // FIXED: Pass button - Updated logic
+//   const handlePass = () => {
+//     if (currentIndex >= displayUsers.length || !authUser) return
+
+//     const swipedUser = displayUsers[currentIndex]
+//     const currentUserId = swipedUser._id
+//     const isCurrentlyLiked = localLikedUsers.has(currentUserId)
+
+//     if (isCurrentlyLiked) {
+//       // Case 4: Pass on liked profile → Just go to next profile, don't change status
+//       console.log('🚀 Pass on liked profile - just moving to next profile')
+//       goToNextProfile()
+//     } else {
+//       // Case 1: Pass on non-liked profile → Mark as passed and go to next profile
+//       if (!localPassedUsers.has(currentUserId)) {
+//         setLocalPassedUsers((prev) => new Set([...prev, currentUserId]))
+//         dispatch(addPassedUser(currentUserId))
+//         dispatch(
+//           createSwipeRequest({
+//             swipedUserId: currentUserId,
+//             action: 'pass',
+//           })
+//         )
+//       }
+//       goToNextProfile()
+//     }
+//   }
+
+//   // FIXED: Like button - UPDATED to sync properly with Redux
+//   const handleLike = () => {
+//     if (currentIndex >= displayUsers.length || !authUser) return
+
+//     const swipedUser = displayUsers[currentIndex]
+//     const currentUserId = swipedUser._id
+//     const isCurrentlyLiked = localLikedUsers.has(currentUserId)
+
+//     if (isCurrentlyLiked) {
+//       // Case 3: Unlike on liked profile → Change to pass
+//       console.log('💔 Unlike clicked - changing to pass')
+
+//       // Update local state IMMEDIATELY
+//       setLocalLikedUsers((prev) => {
+//         const newSet = new Set(prev)
+//         newSet.delete(currentUserId)
+//         return newSet
+//       })
+//       setLocalPassedUsers((prev) => new Set([...prev, currentUserId]))
+
+//       // If you have updateLikeToPass action, use it:
+//       if (updateLikeToPass) {
+//         dispatch(updateLikeToPass(currentUserId))
+//       } else {
+//         // Otherwise use addPassedUser
+//         dispatch(addPassedUser(currentUserId))
+//       }
+
+//       // Send API request
+//       dispatch(
+//         createSwipeRequest({
+//           swipedUserId: currentUserId,
+//           action: 'pass',
+//         })
+//       )
+//     } else {
+//       // Case 2: Like on non-liked profile → Mark as liked
+//       console.log('💖 Like clicked - marking as liked')
+
+//       // Update local state IMMEDIATELY
+//       setLocalLikedUsers((prev) => new Set([...prev, currentUserId]))
+//       setLocalPassedUsers((prev) => {
+//         const newSet = new Set(prev)
+//         newSet.delete(currentUserId)
+//         return newSet
+//       })
+
+//       // Update Redux
+//       dispatch(addLikedUser(currentUserId))
+
+//       // Send API request
+//       dispatch(
+//         createSwipeRequest({
+//           swipedUserId: currentUserId,
+//           action: 'like',
+//         })
+//       )
+//     }
+//     // Stay on current profile
+//   }
+
+//   // Photo gallery functions
+//   const nextPhoto = () => {
+//     const currentUser = displayUsers[currentIndex]
+//     if (
+//       currentUser?.photos &&
+//       currentPhotoIndex < currentUser.photos.length - 1
+//     ) {
+//       setCurrentPhotoIndex((prev) => prev + 1)
+//     }
+//   }
+
+//   const prevPhoto = () => {
+//     if (currentPhotoIndex > 0) {
+//       setCurrentPhotoIndex((prev) => prev - 1)
+//     }
+//   }
+
+//   const handlePhotoSwipe = (e: React.MouseEvent) => {
+//     const cardWidth = e.currentTarget.clientWidth
+//     const clickX = e.nativeEvent.offsetX
+//     if (clickX < cardWidth / 2) prevPhoto()
+//     else nextPhoto()
+//   }
+
+//   // Image modal functions
+//   const handleImageClick = () => {
+//     const currentUser = displayUsers[currentIndex]
+//     if (currentUser?.photos && currentUser.photos.length > 0) {
+//       setShowImageModal(true)
+//     }
+//   }
+
+//   const handleCloseImageModal = () => {
+//     setShowImageModal(false)
+//   }
+
+//   const handleModalNextPhoto = () => {
+//     const currentUser = displayUsers[currentIndex]
+//     if (
+//       currentUser?.photos &&
+//       currentPhotoIndex < currentUser.photos.length - 1
+//     ) {
+//       setCurrentPhotoIndex((prev) => prev + 1)
+//     }
+//   }
+
+//   const handleModalPrevPhoto = () => {
+//     if (currentPhotoIndex > 0) {
+//       setCurrentPhotoIndex((prev) => prev - 1)
+//     }
+//   }
+
+//   const handleViewProfile = () => router.push('/profile')
+//   const handleViewMatches = () => router.push('/matches')
+
+//   // Logout handlers
+//   // const handleLogout = () => {
+//   //   setShowLogoutModal(true)
+//   // }
+//   const openLogoutModal = () => {
+//     setShowLogoutModal(true)
+//   }
+//   const Header = ({
+//     onViewProfile,
+//     onViewMatches,
+//     disabled,
+//     showLikedOnly,
+//     onToggleLikedOnly,
+//     likedUsersCount,
+//     onRefresh,
+//   }: any) => (
+//     <header className='bg-white shadow-sm py-4 px-6'>
+//       <div className='max-w-2xl mx-auto flex justify-between items-center'>
+//         <Button
+//           title='👤'
+//           onClick={onViewProfile}
+//           disabled={disabled}
+//           btnStyle='w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors disabled:opacity-50 p-0 min-w-0 text-lg'
+//         />
+
+//         <div className='flex items-center gap-4'>
+//           <Button
+//             title='🔄'
+//             onClick={onRefresh}
+//             disabled={disabled}
+//             btnStyle='w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors disabled:opacity-50 p-0 min-w-0 text-lg'
+//           />
+
+//           <Button
+//             title={
+//               <div className='flex items-center gap-2'>
+//                 {showLikedOnly ? '💖' : '💕'}
+//                 {likedUsersCount > 0 && (
+//                   <span className='bg-pink-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center'>
+//                     {likedUsersCount}
+//                   </span>
+//                 )}
+//               </div>
+//             }
+//             onClick={onToggleLikedOnly}
+//             disabled={disabled}
+//             btnStyle={`w-10 h-10 rounded-full flex items-center justify-center transition-colors disabled:opacity-50 p-0 min-w-0 text-lg ${
+//               showLikedOnly
+//                 ? 'bg-pink-500 text-white'
+//                 : 'bg-gray-100 hover:bg-gray-200'
+//             }`}
+//           />
+
+//           <h1 className='text-xl font-bold text-gray-900'>
+//             {showLikedOnly ? 'Liked Profiles' : 'Discover'}
+//           </h1>
+//         </div>
+
+//         <div className='flex items-center gap-2'>
+//           <Button
+//             title='💌'
+//             onClick={onViewMatches}
+//             disabled={disabled}
+//             btnStyle='w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors disabled:opacity-50 p-0 min-w-0 text-lg'
+//           />
+
+//           {/* LOGOUT BUTTON - Using custom modal */}
+//           <Button
+//             title='🚪'
+//             onClick={openLogoutModal}
+//             disabled={disabled}
+//             btnStyle='w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center hover:bg-red-200 transition-colors disabled:opacity-50 p-0 min-w-0 text-lg'
+//           />
+//         </div>
+//       </div>
+//     </header>
+//   )
+
+//   const handleLogout = () => {
+//     if (window.confirm('Are you sure you want to logout?')) {
+//       dispatch(logoutRequest())
+//     }
+//   }
+//   // const confirmLogout = () => {
+//   //   // Dispatch logout action
+//   //   import('../../store/slices/authSlice').then(({ logoutRequest }) => {
+//   //     dispatch(logoutRequest())
+//   //   })
+//   //   setShowLogoutModal(false)
+//   // }
+
+//   // const cancelLogout = () => {
+//   //   setShowLogoutModal(false)
+//   // }
+//   const confirmLogout = () => {
+//     dispatch(logoutRequest())
+//     setShowLogoutModal(false)
+//   }
+
+//   const cancelLogout = () => {
+//     setShowLogoutModal(false)
+//   }
+
+//   const handleRefresh = () => {
+//     console.log('🔄 Manual refresh triggered')
+//     setHasFetched(false)
+//     setIsInitialLoad(true)
+//     setCurrentIndex(0)
+//     setLocalLikedUsers(new Set())
+//     setLocalPassedUsers(new Set())
+//     setCurrentPhotoIndex(0)
+//     setShuffledUsers([])
+//     setShowLikedOnly(false)
+
+//     // Clear existing data and refetch
+//     if (authUser) {
+//       dispatch(getSwipeHistoryRequest())
+//       dispatch(getProfileRequest())
+
+//       if (userLocation) {
+//         dispatch(
+//           getRecommendationsRequest({
+//             latitude: userLocation.latitude,
+//             longitude: userLocation.longitude,
+//           })
+//         )
+//       } else {
+//         dispatch(getRecommendationsRequest({}))
+//       }
+//     }
+//   }
+
+//   // Toggle between showing all users and liked users only
+//   const toggleLikedOnly = () => {
+//     setShowLikedOnly(!showLikedOnly)
+//   }
+
+//   const isCurrentUserLiked = () => {
+//     if (currentIndex >= displayUsers.length) return false
+//     return localLikedUsers.has(displayUsers[currentIndex]._id)
+//   }
+
+//   const isLiked = isCurrentUserLiked()
+
+//   // Improved loading logic
+//   const isLoading =
+//     authLoading ||
+//     profileLoading ||
+//     (isInitialLoad && recommendationsLoading) ||
+//     (isInitialLoad && loadingSwipeHistory)
+
+//   // Show loading screen during initial data fetch
+//   if (!authUser || isLoading) {
+//     return <LoadingScreen />
+//   }
+
+//   if (recommendationsError) {
+//     return (
+//       <ErrorScreen
+//         error={recommendationsError}
+//         onRefresh={handleRefresh}
+//         onLogout={handleLogout}
+//       />
+//     )
+//   }
+
+//   // Show appropriate empty states only after initial load is complete
+//   if (!isInitialLoad) {
+//     if (
+//       displayUsers.length === 0 &&
+//       recommendedUsers.length > 0 &&
+//       showLikedOnly
+//     ) {
+//       return (
+//         <EmptyScreen
+//           onRefresh={handleRefresh}
+//           onLogout={handleLogout}
+//           showLikedOnly={showLikedOnly}
+//           onToggleLikedOnly={toggleLikedOnly}
+//         />
+//       )
+//     }
+
+//     if (displayUsers.length === 0 && recommendedUsers.length > 0) {
+//       return <EmptyScreen onRefresh={handleRefresh} onLogout={handleLogout} />
+//     }
+
+//     if (displayUsers.length === 0) {
+//       return <EmptyScreen onRefresh={handleRefresh} onLogout={handleLogout} />
+//     }
+//   }
+
+//   // FIXED: Safe access to currentUser
+//   const currentUser = displayUsers[currentIndex]
+
+//   // FIXED: Check if currentUser exists before accessing properties
+//   if (!currentUser) {
+//     return <LoadingScreen message='Loading profile...' />
+//   }
+
+//   // FIXED: Safe access to photos
+//   const hasMultiplePhotos = currentUser.photos && currentUser.photos.length > 1
+
+//   return (
+//     <div className='min-h-screen bg-gradient-to-br from-pink-50 to-purple-50'>
+//       {showMatchModal && lastMatch && (
+//         <MatchModal
+//           lastMatch={lastMatch}
+//           onClose={() => setShowMatchModal(false)}
+//         />
+//       )}
+
+//       {showImageModal && (
+//         <ImageModal
+//           photos={currentUser.photos || []}
+//           currentPhotoIndex={currentPhotoIndex}
+//           onClose={handleCloseImageModal}
+//           onNext={handleModalNextPhoto}
+//           onPrev={handleModalPrevPhoto}
+//           userName={currentUser.name}
+//         />
+//       )}
+
+//       {/* Logout Confirmation Modal */}
+//       {showLogoutModal && (
+//         <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4'>
+//           <div className='bg-white rounded-2xl p-6 max-w-sm w-full'>
+//             <h3 className='text-xl font-bold text-gray-900 mb-2'>
+//               Confirm Logout
+//             </h3>
+//             <p className='text-gray-600 mb-6'>
+//               Are you sure you want to logout?
+//             </p>
+//             <div className='flex gap-3'>
+//               <Button
+//                 title='Cancel'
+//                 onClick={cancelLogout}
+//                 btnStyle='flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium'
+//               />
+//               <Button
+//                 title='Logout'
+//                 onClick={confirmLogout}
+//                 btnStyle='flex-1 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium'
+//               />
+//             </div>
+//           </div>
+//         </div>
+//       )}
+
+//       <Header
+//         onViewProfile={handleViewProfile}
+//         onViewMatches={handleViewMatches}
+//         disabled={swipeLoading || isLoading}
+//         showLikedOnly={showLikedOnly}
+//         onToggleLikedOnly={toggleLikedOnly}
+//         likedUsersCount={likedUsersCount}
+//         onRefresh={handleRefresh}
+//         onLogout={handleLogout}
+//       />
+
+//       <div className='max-w-md mx-auto pt-8 px-4'>
+//         {/* Navigation arrows for manual navigation */}
+//         {displayUsers.length > 1 && (
+//           <div className='flex justify-between items-center mb-4'>
+//             <Button
+//               title='←'
+//               onClick={goToPreviousProfile}
+//               disabled={swipeLoading}
+//               btnStyle='w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors border border-gray-200 disabled:opacity-50 p-0 min-w-0 text-xl'
+//             />
+
+//             <Button
+//               title='→'
+//               onClick={goToNextProfile}
+//               disabled={swipeLoading}
+//               btnStyle='w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors border border-gray-200 disabled:opacity-50 p-0 min-w-0 text-xl'
+//             />
+//           </div>
+//         )}
+
+//         <UserCard
+//           user={currentUser}
+//           isLiked={isLiked}
+//           currentPhotoIndex={currentPhotoIndex}
+//           hasMultiplePhotos={hasMultiplePhotos}
+//           onPhotoSwipe={handlePhotoSwipe}
+//           onPrevPhoto={prevPhoto}
+//           onNextPhoto={nextPhoto}
+//           onImageClick={handleImageClick}
+//           showLikedOnly={showLikedOnly}
+//         />
+
+//         <ActionButtons
+//           onPass={handlePass}
+//           onLike={handleLike}
+//           isLiked={isLiked}
+//           disabled={swipeLoading}
+//           showLikedOnly={showLikedOnly}
+//         />
+//       </div>
+//     </div>
+//   )
+// }
+
+// export default DiscoveryPage
+
+// 'use client'
+// import React, {
+//   useEffect,
+//   useState,
+//   useMemo,
+//   useCallback,
+//   Suspense,
+// } from 'react'
+// import { useSelector, useDispatch } from 'react-redux'
+// import { useRouter, useSearchParams } from 'next/navigation'
+// import { RootState, AppDispatch } from '../../store/store'
+// import {
+//   getRecommendationsRequest,
+//   getSwipeHistoryRequest,
+//   addLikedUser,
+//   addPassedUser,
+//   updatePassToLike,
+//   updateLikeToPass,
+// } from '../../store/slices/discoverySlice'
+// import { createSwipeRequest } from '../../store/slices/swipeSlice'
+// import { checkAuthRequest, logoutRequest } from '../../store/slices/authSlice'
+// import { getProfileRequest } from '../../store/slices/profileSlice'
+// import Button from '../../components/Button'
+
+// interface UserProfile {
+//   _id: string
+//   name: string
+//   age: number
+//   bio: string
+//   photos: string[]
+//   gender: string
+//   interests: string[]
+//   location: string
+//   geoLocation?: {
+//     type: string
+//     coordinates: [number, number] // [longitude, latitude]
+//   }
+//   distance?: number
+// }
+
+// // Fisher-Yates shuffle algorithm for random ordering
+// const shuffleArray = <T,>(array: T[]): T[] => {
+//   const shuffled = [...array]
+//   for (let i = shuffled.length - 1; i > 0; i--) {
+//     const j = Math.floor(Math.random() * (i + 1))
+//     ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+//   }
+//   return shuffled
+// }
+
+// // Haversine formula to calculate distance between two coordinates
+// const calculateDistance = (
+//   lat1: number,
+//   lon1: number,
+//   lat2: number,
+//   lon2: number
+// ): number => {
+//   const R = 6371 // Earth's radius in kilometers
+//   const dLat = (lat2 - lat1) * (Math.PI / 180)
+//   const dLon = (lon2 - lon1) * (Math.PI / 180)
+//   const a =
+//     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+//     Math.cos(lat1 * (Math.PI / 180)) *
+//       Math.cos(lat2 * (Math.PI / 180)) *
+//       Math.sin(dLon / 2) *
+//       Math.sin(dLon / 2)
+//   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+//   const distance = R * c
+//   return distance
+// }
+
+// // Format distance for display - only km, no meters
+// const formatDistance = (distance: number): string => {
+//   if (distance < 1) {
+//     return `<1km` // Show <1km for distances less than 1km
+//   } else if (distance < 10) {
+//     return `${distance.toFixed(1)}km` // Show 1 decimal for short distances
+//   } else {
+//     return `${Math.round(distance)}km` // Round for longer distances
+//   }
+// }
+
+// // Helper function to extract coordinates from geoLocation
+// const getCoordinates = (
+//   user: UserProfile
+// ): { latitude: number; longitude: number } | null => {
+//   if (
+//     user.geoLocation &&
+//     user.geoLocation.coordinates &&
+//     user.geoLocation.coordinates.length === 2 &&
+//     user.geoLocation.coordinates[0] !== 0 &&
+//     user.geoLocation.coordinates[1] !== 0
+//   ) {
+//     // geoLocation.coordinates is [longitude, latitude]
+//     return {
+//       longitude: user.geoLocation.coordinates[0],
+//       latitude: user.geoLocation.coordinates[1],
+//     }
+//   }
+//   return null
+// }
+
+// // Loading Screen Component
+// const LoadingScreen = ({ message = 'Loading...' }: { message?: string }) => (
+//   <div className='min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center'>
+//     <div className='text-center'>
+//       <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4'></div>
+//       <p className='text-gray-600'>{message}</p>
+//     </div>
+//   </div>
+// )
+
+// // Error Screen Component
+// const ErrorScreen = ({
+//   error,
+//   onRefresh,
+//   onLogout,
+// }: {
+//   error: string
+//   onRefresh: () => void
+//   onLogout?: () => void
+// }) => (
+//   <div className='min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center'>
+//     <div className='text-center bg-white rounded-3xl p-8 shadow-lg max-w-md mx-4'>
+//       <div className='text-6xl mb-4'>😕</div>
+//       <h2 className='text-2xl font-bold text-gray-900 mb-4'>
+//         Something went wrong
+//       </h2>
+//       <p className='text-gray-600 mb-4'>{error}</p>
+//       <div className='flex gap-3'>
+//         <Button
+//           title='Try Again'
+//           onClick={onRefresh}
+//           btnStyle='flex-1 bg-pink-500 text-white px-4 py-3 rounded-xl hover:bg-pink-600 transition-colors'
+//         />
+//         {onLogout && (
+//           <Button
+//             title='Logout'
+//             onClick={onLogout}
+//             btnStyle='flex-1 bg-red-500 text-white px-4 py-3 rounded-xl hover:bg-red-600 transition-colors'
+//           />
+//         )}
+//       </div>
+//     </div>
+//   </div>
+// )
+
+// // Empty Screen Component
+// const EmptyScreen = ({
+//   onRefresh,
+//   onLogout,
+//   showLikedOnly,
+//   onToggleLikedOnly,
+// }: {
+//   onRefresh: () => void
+//   onLogout?: () => void
+//   showLikedOnly?: boolean
+//   onToggleLikedOnly?: () => void
+// }) => (
+//   <div className='min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center'>
+//     <div className='text-center bg-white rounded-3xl p-8 shadow-lg max-w-md mx-4'>
+//       <div className='text-6xl mb-4'>{showLikedOnly ? '💖' : '😢'}</div>
+//       <h2 className='text-2xl font-bold text-gray-900 mb-4'>
+//         {showLikedOnly ? 'No Liked Profiles Yet' : 'No profiles found'}
+//       </h2>
+//       <p className='text-gray-600 mb-6'>
+//         {showLikedOnly
+//           ? "You haven't liked any profiles yet. Start swiping to build your list!"
+//           : 'No potential matches found in your area.'}
+//       </p>
+//       <div className='flex flex-col gap-3'>
+//         {showLikedOnly && onToggleLikedOnly ? (
+//           <Button
+//             title='Show All Profiles'
+//             onClick={onToggleLikedOnly}
+//             btnStyle='bg-pink-500 text-white px-6 py-3 rounded-xl hover:bg-pink-600 transition-colors'
+//           />
+//         ) : (
+//           <Button
+//             title='Refresh'
+//             onClick={onRefresh}
+//             btnStyle='bg-pink-500 text-white px-6 py-3 rounded-xl hover:bg-pink-600 transition-colors'
+//           />
+//         )}
+//         {onLogout && (
+//           <Button
+//             title='Logout'
+//             onClick={onLogout}
+//             btnStyle='bg-red-500 text-white px-6 py-3 rounded-xl hover:bg-red-600 transition-colors'
+//           />
+//         )}
+//       </div>
+//     </div>
+//   </div>
+// )
+
+// // Match Modal Component
+// const MatchModal = ({
+//   lastMatch,
+//   onClose,
+// }: {
+//   lastMatch: any
+//   onClose: () => void
+// }) => (
+//   <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4'>
+//     <div className='bg-white rounded-3xl p-8 text-center max-w-sm w-full'>
+//       <div className='text-6xl mb-4'>🎉</div>
+//       <h3 className='text-2xl font-bold text-gray-900 mb-2'>It's a Match!</h3>
+//       <p className='text-gray-600 mb-4'>You matched with {lastMatch.name}</p>
+//       <Button
+//         title='Continue Swiping'
+//         onClick={onClose}
+//         btnStyle='bg-pink-500 text-white px-6 py-2 rounded-xl hover:bg-pink-600 transition-colors'
+//       />
+//     </div>
+//   </div>
+// )
+
+// // Image Modal Component
+// const ImageModal = ({
+//   photos,
+//   currentPhotoIndex,
+//   onClose,
+//   onNext,
+//   onPrev,
+//   userName,
+// }: {
+//   photos: string[]
+//   currentPhotoIndex: number
+//   onClose: () => void
+//   onNext: () => void
+//   onPrev: () => void
+//   userName: string
+// }) => (
+//   <div className='fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4'>
+//     <div className='relative max-w-4xl max-h-full w-full'>
+//       <Button
+//         title='✕'
+//         onClick={onClose}
+//         btnStyle='absolute top-4 right-4 z-10 text-white text-2xl bg-black/50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-black/70 transition-colors p-0 min-w-0'
+//       />
+
+//       {photos.length > 1 && (
+//         <>
+//           <Button
+//             title='‹'
+//             onClick={onPrev}
+//             btnStyle='absolute left-4 top-1/2 transform -translate-y-1/2 z-10 text-white text-2xl bg-black/50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-black/70 transition-colors p-0 min-w-0'
+//             disabled={currentPhotoIndex === 0}
+//           />
+//           <Button
+//             title='›'
+//             onClick={onNext}
+//             btnStyle='absolute right-4 top-1/2 transform -translate-y-1/2 z-10 text-white text-2xl bg-black/50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-black/70 transition-colors p-0 min-w-0'
+//             disabled={currentPhotoIndex === photos.length - 1}
+//           />
+//         </>
+//       )}
+
+//       <div className='flex flex-col items-center'>
+//         <img
+//           src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${photos[currentPhotoIndex]}`}
+//           alt={`${userName} - Photo ${currentPhotoIndex + 1}`}
+//           className='max-w-full max-h-[80vh] object-contain rounded-lg'
+//         />
+//         <div className='text-white mt-4 text-center'>
+//           <p>
+//             {currentPhotoIndex + 1} of {photos.length}
+//           </p>
+//         </div>
+//       </div>
+//     </div>
+//   </div>
+// )
+
+// // Action Buttons Component
+// const ActionButtons = ({
+//   onPass,
+//   onLike,
+//   isLiked,
+//   disabled,
+//   showLikedOnly,
+// }: any) => (
+//   <div className='flex justify-center gap-8 mt-8 pb-8'>
+//     {!showLikedOnly ? (
+//       // Normal mode: Show both pass and like buttons
+//       <>
+//         <Button
+//           title={isLiked ? '💔 Pass' : '❌ Pass'}
+//           onClick={onPass}
+//           disabled={disabled}
+//           btnStyle={`w-24 h-16 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 border-2 disabled:opacity-50 font-medium text-base p-0 min-w-0 ${
+//             isLiked
+//               ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100 hover:border-red-300'
+//               : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300'
+//           }`}
+//         />
+//         <Button
+//           title={isLiked ? '💔 Unlike' : '💖 Like'}
+//           onClick={onLike}
+//           disabled={disabled}
+//           btnStyle={`w-24 h-16 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 border-2 disabled:opacity-50 font-medium text-base p-0 min-w-0 ${
+//             isLiked
+//               ? 'bg-gray-100 border-gray-200 text-gray-700 hover:bg-gray-200'
+//               : 'bg-pink-500 border-pink-500 text-white hover:bg-pink-600'
+//           }`}
+//         />
+//       </>
+//     ) : (
+//       // Liked only mode: Show only unlike button
+//       <Button
+//         title='💔 Remove'
+//         onClick={onLike} // This will unlike the profile
+//         disabled={disabled}
+//         btnStyle='w-32 h-16 bg-red-500 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-red-600 transition-colors disabled:opacity-50 font-medium text-base'
+//       />
+//     )}
+//   </div>
+// )
+
+// // User Card Component
+// const UserCard = ({
+//   user,
+//   isLiked,
+//   currentPhotoIndex,
+//   hasMultiplePhotos,
+//   onPhotoSwipe,
+//   onPrevPhoto,
+//   onNextPhoto,
+//   onImageClick,
+//   showLikedOnly,
+// }: any) => (
+//   <div className='bg-white rounded-3xl shadow-lg overflow-hidden'>
+//     <div className='relative h-96'>
+//       {user.photos && user.photos.length > 0 ? (
+//         <>
+//           <div
+//             className='w-full h-full cursor-pointer relative'
+//             onClick={onPhotoSwipe}
+//           >
+//             <img
+//               src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${user.photos[currentPhotoIndex]}`}
+//               alt={`${user.name} - Photo ${currentPhotoIndex + 1}`}
+//               className='w-full h-full object-cover cursor-zoom-in'
+//               onClick={(e) => {
+//                 e.stopPropagation()
+//                 onImageClick()
+//               }}
+//             />
+
+//             {/* Distance Display - Top right corner, clean format */}
+//             {user.distance !== undefined && (
+//               <div className='absolute top-4 right-4 bg-black/70 text-white px-3 py-2 rounded-full text-sm font-medium backdrop-blur-sm z-10'>
+//                 {formatDistance(user.distance)}
+//               </div>
+//             )}
+
+//             {/* Show liked badge */}
+//             {isLiked && (
+//               <div className='absolute top-4 left-4 bg-pink-500 text-white px-3 py-2 rounded-full text-sm font-medium backdrop-blur-sm z-10'>
+//                 ❤️ Liked
+//               </div>
+//             )}
+
+//             {hasMultiplePhotos && (
+//               <>
+//                 <Button
+//                   title='‹'
+//                   onClick={(e) => {
+//                     e.stopPropagation()
+//                     onPrevPhoto()
+//                   }}
+//                   btnStyle='absolute left-2 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-black/10 bg-opacity-50 rounded-full flex items-center justify-center text-white hover:bg-opacity-70 transition-opacity p-0 min-w-0'
+//                 />
+//                 <Button
+//                   title='›'
+//                   onClick={(e) => {
+//                     e.stopPropagation()
+//                     onNextPhoto()
+//                   }}
+//                   btnStyle='absolute right-2 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-black/10 bg-opacity-50 rounded-full flex items-center justify-center text-white hover:bg-opacity-70 transition-opacity p-0 min-w-0'
+//                 />
+//               </>
+//             )}
+//           </div>
+//           {hasMultiplePhotos && (
+//             <>
+//               <div className='absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2'>
+//                 {user.photos.map((_: any, index: number) => (
+//                   <div
+//                     key={index}
+//                     className={`w-2 h-2 rounded-full transition-all duration-300 ${
+//                       index === currentPhotoIndex
+//                         ? 'bg-white scale-125'
+//                         : 'bg-white bg-opacity-50'
+//                     }`}
+//                   />
+//                 ))}
+//               </div>
+//               <div className='absolute top-4 left-4 bg-black/10 bg-opacity-50 text-white px-2 py-1 rounded-full text-xs'>
+//                 {currentPhotoIndex + 1} / {user.photos.length}
+//               </div>
+//             </>
+//           )}
+//         </>
+//       ) : (
+//         <div className='w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-lg'>
+//           No Photo
+//         </div>
+//       )}
+//     </div>
+//     <div className='p-6'>
+//       <div className='flex justify-between items-start mb-4'>
+//         <div>
+//           <h2 className='text-2xl font-bold text-gray-900'>
+//             {user.name}, {user.age}
+//           </h2>
+//           <p className='text-gray-600'>{user.gender}</p>
+//         </div>
+//         {showLikedOnly && (
+//           <div className='bg-green-500 text-white px-3 py-1 rounded-full text-sm'>
+//             💖 Liked
+//           </div>
+//         )}
+//       </div>
+//       {user.bio && (
+//         <p className='text-gray-700 mb-4 leading-relaxed'>{user.bio}</p>
+//       )}
+//       {user.location && (
+//         <p className='text-gray-600 text-sm mb-4 flex items-center gap-1'>
+//           📍 {user.location}
+//         </p>
+//       )}
+//       {user.interests && user.interests.length > 0 && (
+//         <div className='mb-2'>
+//           <h3 className='text-sm font-semibold text-gray-900 mb-2'>
+//             Interests
+//           </h3>
+//           <div className='flex flex-wrap gap-2'>
+//             {user.interests
+//               .slice(0, 4)
+//               .map((interest: string, index: number) => (
+//                 <span
+//                   key={index}
+//                   className='bg-pink-100 text-pink-800 px-3 py-1 rounded-full text-xs font-medium'
+//                 >
+//                   {interest}
+//                 </span>
+//               ))}
+//           </div>
+//         </div>
+//       )}
+//     </div>
+//   </div>
+// )
+
+// // Main Discovery Content Component (only shown when authenticated)
+// const DiscoveryContent: React.FC = () => {
+//   const dispatch = useDispatch<AppDispatch>()
+//   const router = useRouter()
+
+//   const { user: authUser } = useSelector((state: RootState) => state.auth)
+//   const {
+//     recommendedUsers,
+//     loading: recommendationsLoading,
+//     error: recommendationsError,
+//     swipeHistory,
+//     loadingSwipeHistory,
+//   } = useSelector((state: RootState) => state.discovery)
+//   const { loading: swipeLoading, lastMatch } = useSelector(
+//     (state: RootState) => state.swipe
+//   )
+//   const { user: profileUser, loading: profileLoading } = useSelector(
+//     (state: RootState) => state.profile
+//   )
+
+//   const [currentIndex, setCurrentIndex] = useState(0)
+//   const [showMatchModal, setShowMatchModal] = useState(false)
+//   const [hasFetched, setHasFetched] = useState(false)
+//   const [localLikedUsers, setLocalLikedUsers] = useState<Set<string>>(new Set())
+//   const [localPassedUsers, setLocalPassedUsers] = useState<Set<string>>(
+//     new Set()
+//   )
+//   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
+//   const [shuffledUsers, setShuffledUsers] = useState<UserProfile[]>([])
+//   const [showImageModal, setShowImageModal] = useState(false)
+//   const [userLocation, setUserLocation] = useState<{
+//     latitude: number
+//     longitude: number
+//   } | null>(null)
+//   const [showLikedOnly, setShowLikedOnly] = useState(false)
+//   const [isInitialLoad, setIsInitialLoad] = useState(true)
+//   const [geolocationLoading, setGeolocationLoading] = useState(false)
+
+//   // Logout modal state
+//   const [showLogoutModal, setShowLogoutModal] = useState(false)
+
+//   // Get gender from profile
+//   const currentUserGender = useMemo(() => {
+//     if (profileUser?.gender) {
+//       return profileUser.gender.toLowerCase().trim()
+//     }
+//     return null
+//   }, [profileUser])
+
+//   // Calculate distances for users when location data is available
+//   const usersWithDistance = useMemo(() => {
+//     if (!userLocation || !shuffledUsers.length) return shuffledUsers
+
+//     return shuffledUsers.map((user) => {
+//       const userCoords = getCoordinates(user)
+//       if (userCoords) {
+//         const distance = calculateDistance(
+//           userLocation.latitude,
+//           userLocation.longitude,
+//           userCoords.latitude,
+//           userCoords.longitude
+//         )
+//         return { ...user, distance }
+//       }
+//       return user
+//     })
+//   }, [shuffledUsers, userLocation])
+
+//   // Filter users based on gender preference from profile AND use shuffled order
+//   const filteredUsers = useMemo(() => {
+//     if (!currentUserGender || !usersWithDistance.length)
+//       return usersWithDistance
+
+//     const filtered = usersWithDistance.filter((user) => {
+//       const userGender = user.gender?.toLowerCase().trim()
+
+//       // Male users see only females
+//       if (currentUserGender === 'male') {
+//         return userGender === 'female'
+//       }
+//       // Female users see only males
+//       else if (currentUserGender === 'female') {
+//         return userGender === 'male'
+//       }
+//       // For 'other' or any other gender, show all profiles
+//       return true
+//     })
+
+//     return filtered
+//   }, [usersWithDistance, currentUserGender])
+
+//   // Filter to show only liked users when showLikedOnly is true
+//   const displayUsers = useMemo(() => {
+//     if (!showLikedOnly) return filteredUsers
+
+//     // Filter to only show users that have been liked
+//     const likedUsers = filteredUsers.filter((user) =>
+//       localLikedUsers.has(user._id)
+//     )
+
+//     return likedUsers
+//   }, [filteredUsers, showLikedOnly, localLikedUsers])
+
+//   // Get the count of liked users for the button badge
+//   const likedUsersCount = useMemo(() => {
+//     return filteredUsers.filter((user) => localLikedUsers.has(user._id)).length
+//   }, [filteredUsers, localLikedUsers])
+
+//   // Fetch profile when auth user is available
+//   useEffect(() => {
+//     if (authUser && !profileUser && !profileLoading) {
+//       console.log('👤 Fetching profile for authenticated user')
+//       dispatch(getProfileRequest())
+//     }
+//   }, [authUser, profileUser, profileLoading, dispatch])
+
+//   // Initialize swipe history when data is available
+//   useEffect(() => {
+//     setLocalLikedUsers(new Set(swipeHistory.likedUsers || []))
+//     setLocalPassedUsers(new Set(swipeHistory.passedUsers || []))
+//   }, [swipeHistory.likedUsers, swipeHistory.passedUsers])
+
+//   // Reset photo index when current index changes
+//   useEffect(() => {
+//     setCurrentPhotoIndex(0)
+//   }, [currentIndex])
+
+//   // Reset to first profile when switching between modes
+//   useEffect(() => {
+//     setCurrentIndex(0)
+//     setCurrentPhotoIndex(0)
+//   }, [showLikedOnly])
+
+//   // FIXED: Optimized geolocation fetching - using useCallback
+//   const fetchRecommendations = useCallback(
+//     (latitude?: number, longitude?: number) => {
+//       console.log('📍 Fetching recommendations with location:', {
+//         latitude,
+//         longitude,
+//       })
+
+//       if (latitude && longitude) {
+//         dispatch(
+//           getRecommendationsRequest({
+//             latitude,
+//             longitude,
+//           })
+//         )
+//       } else {
+//         dispatch(getRecommendationsRequest({}))
+//       }
+
+//       setHasFetched(true)
+//     },
+//     [dispatch]
+//   )
+
+//   // FIXED: Optimized geolocation function
+//   const getLocationAndFetch = useCallback(() => {
+//     if (navigator.geolocation) {
+//       setGeolocationLoading(true)
+
+//       console.log('📍 Attempting to get user location...')
+
+//       navigator.geolocation.getCurrentPosition(
+//         (position) => {
+//           const { latitude, longitude } = position.coords
+//           console.log('📍 User location captured:', { latitude, longitude })
+//           setUserLocation({ latitude, longitude })
+//           setGeolocationLoading(false)
+//           fetchRecommendations(latitude, longitude)
+//         },
+//         (error) => {
+//           console.log('⚠️ Geolocation error or denied:', error.message)
+//           setUserLocation(null)
+//           setGeolocationLoading(false)
+//           // Don't treat this as an error - just fetch without location
+//           fetchRecommendations()
+//         },
+//         {
+//           enableHighAccuracy: false,
+//           timeout: 5000, // Reduced to 5 seconds
+//           maximumAge: 30000,
+//         }
+//       )
+//     } else {
+//       console.log('📍 Geolocation not supported')
+//       setUserLocation(null)
+//       fetchRecommendations()
+//     }
+//   }, [fetchRecommendations])
+
+//   // FIXED: OPTIMIZED MAIN DATA FETCHING LOGIC
+//   useEffect(() => {
+//     // Only fetch if we have auth user and profile, and haven't fetched yet
+//     if (authUser && profileUser && !hasFetched && isInitialLoad) {
+//       console.log('🔄 Starting OPTIMIZED data fetch process...')
+
+//       // Set loading state
+//       setIsInitialLoad(true)
+
+//       // Fetch swipe history immediately
+//       dispatch(getSwipeHistoryRequest())
+
+//       // Start geolocation and recommendations with a small delay
+//       setTimeout(() => {
+//         getLocationAndFetch()
+//       }, 50)
+//     }
+//   }, [
+//     authUser,
+//     profileUser,
+//     hasFetched,
+//     isInitialLoad,
+//     dispatch,
+//     getLocationAndFetch,
+//   ])
+
+//   // Shuffle users when recommendations are loaded
+//   useEffect(() => {
+//     if (recommendedUsers.length > 0 && isInitialLoad) {
+//       console.log('🎲 Shuffling recommended users:', recommendedUsers.length)
+//       const shuffled = shuffleArray(recommendedUsers as UserProfile[])
+//       setShuffledUsers(shuffled)
+//       setIsInitialLoad(false)
+//     }
+//   }, [recommendedUsers, isInitialLoad])
+
+//   // Handle match modal
+//   useEffect(() => {
+//     if (lastMatch) {
+//       setShowMatchModal(true)
+//       const timer = setTimeout(() => {
+//         setShowMatchModal(false)
+//       }, 3000)
+//       return () => clearTimeout(timer)
+//     }
+//   }, [lastMatch])
+
+//   // Reset current index when filtered users change
+//   useEffect(() => {
+//     if (displayUsers.length > 0 && currentIndex >= displayUsers.length) {
+//       setCurrentIndex(0)
+//     }
+//   }, [displayUsers, currentIndex])
+
+//   // Navigate to next profile (circular navigation)
+//   const goToNextProfile = () => {
+//     if (displayUsers.length === 0) return
+
+//     if (currentIndex < displayUsers.length - 1) {
+//       // Go to next profile
+//       setCurrentIndex((prev) => prev + 1)
+//     } else {
+//       // Circular navigation: go back to first profile
+//       setCurrentIndex(0)
+//     }
+//   }
+
+//   // Navigate to previous profile (circular navigation)
+//   const goToPreviousProfile = () => {
+//     if (displayUsers.length === 0) return
+
+//     if (currentIndex > 0) {
+//       // Go to previous profile
+//       setCurrentIndex((prev) => prev - 1)
+//     } else {
+//       // Circular navigation: go to last profile
+//       setCurrentIndex(displayUsers.length - 1)
+//     }
+//   }
+
+//   // FIXED: Pass button - Updated logic
+//   const handlePass = () => {
+//     if (currentIndex >= displayUsers.length || !authUser) return
+
+//     const swipedUser = displayUsers[currentIndex]
+//     const currentUserId = swipedUser._id
+//     const isCurrentlyLiked = localLikedUsers.has(currentUserId)
+
+//     if (isCurrentlyLiked) {
+//       // Case 4: Pass on liked profile → Just go to next profile, don't change status
+//       console.log('🚀 Pass on liked profile - just moving to next profile')
+//       goToNextProfile()
+//     } else {
+//       // Case 1: Pass on non-liked profile → Mark as passed and go to next profile
+//       if (!localPassedUsers.has(currentUserId)) {
+//         setLocalPassedUsers((prev) => new Set([...prev, currentUserId]))
+//         dispatch(addPassedUser(currentUserId))
+//         dispatch(
+//           createSwipeRequest({
+//             swipedUserId: currentUserId,
+//             action: 'pass',
+//           })
+//         )
+//       }
+//       goToNextProfile()
+//     }
+//   }
+
+//   // FIXED: Like button - UPDATED to sync properly with Redux
+//   const handleLike = () => {
+//     if (currentIndex >= displayUsers.length || !authUser) return
+
+//     const swipedUser = displayUsers[currentIndex]
+//     const currentUserId = swipedUser._id
+//     const isCurrentlyLiked = localLikedUsers.has(currentUserId)
+
+//     if (isCurrentlyLiked) {
+//       // Case 3: Unlike on liked profile → Change to pass
+//       console.log('💔 Unlike clicked - changing to pass')
+
+//       // Update local state IMMEDIATELY
+//       setLocalLikedUsers((prev) => {
+//         const newSet = new Set(prev)
+//         newSet.delete(currentUserId)
+//         return newSet
+//       })
+//       setLocalPassedUsers((prev) => new Set([...prev, currentUserId]))
+
+//       // If you have updateLikeToPass action, use it:
+//       if (updateLikeToPass) {
+//         dispatch(updateLikeToPass(currentUserId))
+//       } else {
+//         // Otherwise use addPassedUser
+//         dispatch(addPassedUser(currentUserId))
+//       }
+
+//       // Send API request
+//       dispatch(
+//         createSwipeRequest({
+//           swipedUserId: currentUserId,
+//           action: 'pass',
+//         })
+//       )
+//     } else {
+//       // Case 2: Like on non-liked profile → Mark as liked
+//       console.log('💖 Like clicked - marking as liked')
+
+//       // Update local state IMMEDIATELY
+//       setLocalLikedUsers((prev) => new Set([...prev, currentUserId]))
+//       setLocalPassedUsers((prev) => {
+//         const newSet = new Set(prev)
+//         newSet.delete(currentUserId)
+//         return newSet
+//       })
+
+//       // Update Redux
+//       dispatch(addLikedUser(currentUserId))
+
+//       // Send API request
+//       dispatch(
+//         createSwipeRequest({
+//           swipedUserId: currentUserId,
+//           action: 'like',
+//         })
+//       )
+//     }
+//     // Stay on current profile
+//   }
+
+//   // Photo gallery functions
+//   const nextPhoto = () => {
+//     const currentUser = displayUsers[currentIndex]
+//     if (
+//       currentUser?.photos &&
+//       currentPhotoIndex < currentUser.photos.length - 1
+//     ) {
+//       setCurrentPhotoIndex((prev) => prev + 1)
+//     }
+//   }
+
+//   const prevPhoto = () => {
+//     if (currentPhotoIndex > 0) {
+//       setCurrentPhotoIndex((prev) => prev - 1)
+//     }
+//   }
+
+//   const handlePhotoSwipe = (e: React.MouseEvent) => {
+//     const cardWidth = e.currentTarget.clientWidth
+//     const clickX = e.nativeEvent.offsetX
+//     if (clickX < cardWidth / 2) prevPhoto()
+//     else nextPhoto()
+//   }
+
+//   // Image modal functions
+//   const handleImageClick = () => {
+//     const currentUser = displayUsers[currentIndex]
+//     if (currentUser?.photos && currentUser.photos.length > 0) {
+//       setShowImageModal(true)
+//     }
+//   }
+
+//   const handleCloseImageModal = () => {
+//     setShowImageModal(false)
+//   }
+
+//   const handleModalNextPhoto = () => {
+//     const currentUser = displayUsers[currentIndex]
+//     if (
+//       currentUser?.photos &&
+//       currentPhotoIndex < currentUser.photos.length - 1
+//     ) {
+//       setCurrentPhotoIndex((prev) => prev + 1)
+//     }
+//   }
+
+//   const handleModalPrevPhoto = () => {
+//     if (currentPhotoIndex > 0) {
+//       setCurrentPhotoIndex((prev) => prev - 1)
+//     }
+//   }
+
+//   const handleViewProfile = () => router.push('/profile')
+//   const handleViewMatches = () => router.push('/matches')
+
+//   // Logout handlers
+//   const openLogoutModal = () => {
+//     setShowLogoutModal(true)
+//   }
+
+//   const Header = ({
+//     onViewProfile,
+//     onViewMatches,
+//     disabled,
+//     showLikedOnly,
+//     onToggleLikedOnly,
+//     likedUsersCount,
+//     onRefresh,
+//   }: any) => (
+//     <header className='bg-white shadow-sm py-4 px-6'>
+//       <div className='max-w-2xl mx-auto flex justify-between items-center'>
+//         <Button
+//           title='👤'
+//           onClick={onViewProfile}
+//           disabled={disabled}
+//           btnStyle='w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors disabled:opacity-50 p-0 min-w-0 text-lg'
+//         />
+
+//         <div className='flex items-center gap-4'>
+//           <Button
+//             title='🔄'
+//             onClick={onRefresh}
+//             disabled={disabled}
+//             btnStyle='w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors disabled:opacity-50 p-0 min-w-0 text-lg'
+//           />
+
+//           <Button
+//             title={
+//               <div className='flex items-center gap-2'>
+//                 {showLikedOnly ? '💖' : '💕'}
+//                 {likedUsersCount > 0 && (
+//                   <span className='bg-pink-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center'>
+//                     {likedUsersCount}
+//                   </span>
+//                 )}
+//               </div>
+//             }
+//             onClick={onToggleLikedOnly}
+//             disabled={disabled}
+//             btnStyle={`w-10 h-10 rounded-full flex items-center justify-center transition-colors disabled:opacity-50 p-0 min-w-0 text-lg ${
+//               showLikedOnly
+//                 ? 'bg-pink-500 text-white'
+//                 : 'bg-gray-100 hover:bg-gray-200'
+//             }`}
+//           />
+
+//           <h1 className='text-xl font-bold text-gray-900'>
+//             {showLikedOnly ? 'Liked Profiles' : 'Discover'}
+//           </h1>
+//         </div>
+
+//         <div className='flex items-center gap-2'>
+//           <Button
+//             title='💌'
+//             onClick={onViewMatches}
+//             disabled={disabled}
+//             btnStyle='w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors disabled:opacity-50 p-0 min-w-0 text-lg'
+//           />
+
+//           {/* LOGOUT BUTTON - Using custom modal */}
+//           <Button
+//             title='🚪'
+//             onClick={openLogoutModal}
+//             disabled={disabled}
+//             btnStyle='w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center hover:bg-red-200 transition-colors disabled:opacity-50 p-0 min-w-0 text-lg'
+//           />
+//         </div>
+//       </div>
+//     </header>
+//   )
+
+//   const handleLogout = () => {
+//     if (window.confirm('Are you sure you want to logout?')) {
+//       dispatch(logoutRequest())
+//     }
+//   }
+
+//   const confirmLogout = () => {
+//     dispatch(logoutRequest())
+//     setShowLogoutModal(false)
+//   }
+
+//   const cancelLogout = () => {
+//     setShowLogoutModal(false)
+//   }
+
+//   const handleRefresh = () => {
+//     console.log('🔄 Manual refresh triggered')
+//     setHasFetched(false)
+//     setIsInitialLoad(true)
+//     setCurrentIndex(0)
+//     setLocalLikedUsers(new Set())
+//     setLocalPassedUsers(new Set())
+//     setCurrentPhotoIndex(0)
+//     setShuffledUsers([])
+//     setShowLikedOnly(false)
+
+//     // Clear existing data and refetch
+//     if (authUser) {
+//       dispatch(getSwipeHistoryRequest())
+//       dispatch(getProfileRequest())
+
+//       // Use the optimized location function
+//       getLocationAndFetch()
+//     }
+//   }
+
+//   // Toggle between showing all users and liked users only
+//   const toggleLikedOnly = () => {
+//     setShowLikedOnly(!showLikedOnly)
+//   }
+
+//   const isCurrentUserLiked = () => {
+//     if (currentIndex >= displayUsers.length) return false
+//     return localLikedUsers.has(displayUsers[currentIndex]._id)
+//   }
+
+//   const isLiked = isCurrentUserLiked()
+
+//   // IMPROVED loading logic
+//   const showLoading =
+//     geolocationLoading ||
+//     isInitialLoad ||
+//     profileLoading ||
+//     recommendationsLoading ||
+//     loadingSwipeHistory
+
+//   if (showLoading) {
+//     return <LoadingScreen message='Loading discovery...' />
+//   }
+
+//   if (recommendationsError) {
+//     return (
+//       <ErrorScreen
+//         error={recommendationsError}
+//         onRefresh={handleRefresh}
+//         onLogout={handleLogout}
+//       />
+//     )
+//   }
+
+//   // Show appropriate empty states only after initial load is complete
+//   if (!isInitialLoad) {
+//     if (
+//       displayUsers.length === 0 &&
+//       recommendedUsers.length > 0 &&
+//       showLikedOnly
+//     ) {
+//       return (
+//         <EmptyScreen
+//           onRefresh={handleRefresh}
+//           onLogout={handleLogout}
+//           showLikedOnly={showLikedOnly}
+//           onToggleLikedOnly={toggleLikedOnly}
+//         />
+//       )
+//     }
+
+//     if (displayUsers.length === 0 && recommendedUsers.length > 0) {
+//       return <EmptyScreen onRefresh={handleRefresh} onLogout={handleLogout} />
+//     }
+
+//     if (displayUsers.length === 0) {
+//       return <EmptyScreen onRefresh={handleRefresh} onLogout={handleLogout} />
+//     }
+//   }
+
+//   // FIXED: Safe access to currentUser
+//   const currentUser = displayUsers[currentIndex]
+
+//   // FIXED: Check if currentUser exists before accessing properties
+//   if (!currentUser) {
+//     return <LoadingScreen message='Loading profile...' />
+//   }
+
+//   // FIXED: Safe access to photos
+//   const hasMultiplePhotos = currentUser.photos && currentUser.photos.length > 1
+
+//   return (
+//     <div className='min-h-screen bg-gradient-to-br from-pink-50 to-purple-50'>
+//       {showMatchModal && lastMatch && (
+//         <MatchModal
+//           lastMatch={lastMatch}
+//           onClose={() => setShowMatchModal(false)}
+//         />
+//       )}
+
+//       {showImageModal && (
+//         <ImageModal
+//           photos={currentUser.photos || []}
+//           currentPhotoIndex={currentPhotoIndex}
+//           onClose={handleCloseImageModal}
+//           onNext={handleModalNextPhoto}
+//           onPrev={handleModalPrevPhoto}
+//           userName={currentUser.name}
+//         />
+//       )}
+
+//       {/* Logout Confirmation Modal */}
+//       {showLogoutModal && (
+//         <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4'>
+//           <div className='bg-white rounded-2xl p-6 max-w-sm w-full'>
+//             <h3 className='text-xl font-bold text-gray-900 mb-2'>
+//               Confirm Logout
+//             </h3>
+//             <p className='text-gray-600 mb-6'>
+//               Are you sure you want to logout?
+//             </p>
+//             <div className='flex gap-3'>
+//               <Button
+//                 title='Cancel'
+//                 onClick={cancelLogout}
+//                 btnStyle='flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium'
+//               />
+//               <Button
+//                 title='Logout'
+//                 onClick={confirmLogout}
+//                 btnStyle='flex-1 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium'
+//               />
+//             </div>
+//           </div>
+//         </div>
+//       )}
+
+//       <Header
+//         onViewProfile={handleViewProfile}
+//         onViewMatches={handleViewMatches}
+//         disabled={swipeLoading || showLoading}
+//         showLikedOnly={showLikedOnly}
+//         onToggleLikedOnly={toggleLikedOnly}
+//         likedUsersCount={likedUsersCount}
+//         onRefresh={handleRefresh}
+//       />
+
+//       <div className='max-w-md mx-auto pt-8 px-4'>
+//         {/* Navigation arrows for manual navigation */}
+//         {displayUsers.length > 1 && (
+//           <div className='flex justify-between items-center mb-4'>
+//             <Button
+//               title='←'
+//               onClick={goToPreviousProfile}
+//               disabled={swipeLoading}
+//               btnStyle='w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors border border-gray-200 disabled:opacity-50 p-0 min-w-0 text-xl'
+//             />
+
+//             <Button
+//               title='→'
+//               onClick={goToNextProfile}
+//               disabled={swipeLoading}
+//               btnStyle='w-10 h-10 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors border border-gray-200 disabled:opacity-50 p-0 min-w-0 text-xl'
+//             />
+//           </div>
+//         )}
+
+//         <UserCard
+//           user={currentUser}
+//           isLiked={isLiked}
+//           currentPhotoIndex={currentPhotoIndex}
+//           hasMultiplePhotos={hasMultiplePhotos}
+//           onPhotoSwipe={handlePhotoSwipe}
+//           onPrevPhoto={prevPhoto}
+//           onNextPhoto={nextPhoto}
+//           onImageClick={handleImageClick}
+//           showLikedOnly={showLikedOnly}
+//         />
+
+//         <ActionButtons
+//           onPass={handlePass}
+//           onLike={handleLike}
+//           isLiked={isLiked}
+//           disabled={swipeLoading}
+//           showLikedOnly={showLikedOnly}
+//         />
+//       </div>
+//     </div>
+//   )
+// }
+
+// // Main Discovery Page Component with Auth Guard
+// const DiscoveryPage: React.FC = () => {
+//   const dispatch = useDispatch<AppDispatch>()
+//   const router = useRouter()
+//   const searchParams = useSearchParams()
+
+//   const {
+//     user: authUser,
+//     loading: authLoading,
+//     checkingAuth,
+//     error: authError,
+//   } = useSelector((state: RootState) => state.auth)
+
+//   const [initialCheckDone, setInitialCheckDone] = useState(false)
+//   const [shouldRedirect, setShouldRedirect] = useState(false)
+
+//   // Check authentication ONCE when component mounts
+//   useEffect(() => {
+//     if (!initialCheckDone) {
+//       console.log('🔐 DiscoveryPage: Initial auth check...')
+//       dispatch(checkAuthRequest())
+//       setInitialCheckDone(true)
+//     }
+//   }, [dispatch, initialCheckDone])
+
+//   // Handle auth check result - OPTIMIZED to prevent flashes
+//   useEffect(() => {
+//     // Skip if still checking
+//     if (checkingAuth || authLoading) return
+
+//     // If we have a user, no need to redirect
+//     if (authUser) {
+//       console.log('✅ User authenticated:', authUser.email)
+//       setShouldRedirect(false)
+//       return
+//     }
+
+//     // If no user and we haven't set redirect yet
+//     if (!authUser && !shouldRedirect) {
+//       console.log('❌ No authenticated user found')
+//       setShouldRedirect(true)
+
+//       // Use setTimeout to ensure this runs after current render cycle
+//       const timer = setTimeout(() => {
+//         console.log('🔄 Redirecting to login...')
+//         router.replace('/login')
+//       }, 0)
+
+//       return () => clearTimeout(timer)
+//     }
+//   }, [checkingAuth, authLoading, authUser, router, shouldRedirect])
+
+//   // Show loading while checking auth
+//   if (checkingAuth || authLoading) {
+//     return <LoadingScreen message='Checking authentication...' />
+//   }
+
+//   // If redirecting, show loading
+//   if (shouldRedirect && !authUser) {
+//     return <LoadingScreen message='Redirecting to login...' />
+//   }
+
+//   // Show content only if authenticated
+//   if (authUser) {
+//     return <DiscoveryContent />
+//   }
+
+//   // Fallback - show loading (shouldn't reach here)
+//   return <LoadingScreen message='Loading...' />
+// }
+
+// // Wrap in Suspense for useSearchParams
+// const DiscoveryPageWithSuspense: React.FC = () => {
+//   return (
+//     <Suspense fallback={<LoadingScreen message='Loading...' />}>
+//       <DiscoveryPage />
+//     </Suspense>
+//   )
+// }
+
+// export default DiscoveryPageWithSuspense
+
 'use client'
-import React, { useEffect, useState, useMemo } from 'react'
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+  Suspense,
+} from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { useRouter } from 'next/navigation'
 import { RootState, AppDispatch } from '../../store/store'
@@ -8,9 +2408,11 @@ import {
   getSwipeHistoryRequest,
   addLikedUser,
   addPassedUser,
+  updatePassToLike,
+  updateLikeToPass,
 } from '../../store/slices/discoverySlice'
 import { createSwipeRequest } from '../../store/slices/swipeSlice'
-import { checkAuthRequest } from '../../store/slices/authSlice'
+import { checkAuthRequest, logoutRequest } from '../../store/slices/authSlice'
 import { getProfileRequest } from '../../store/slices/profileSlice'
 import Button from '../../components/Button'
 
@@ -106,9 +2508,11 @@ const LoadingScreen = ({ message = 'Loading...' }: { message?: string }) => (
 const ErrorScreen = ({
   error,
   onRefresh,
+  onLogout,
 }: {
   error: string
   onRefresh: () => void
+  onLogout?: () => void
 }) => (
   <div className='min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center'>
     <div className='text-center bg-white rounded-3xl p-8 shadow-lg max-w-md mx-4'>
@@ -117,31 +2521,69 @@ const ErrorScreen = ({
         Something went wrong
       </h2>
       <p className='text-gray-600 mb-4'>{error}</p>
-      <Button
-        title='Try Again'
-        onClick={onRefresh}
-        btnStyle='bg-pink-500 text-white px-6 py-3 rounded-xl hover:bg-pink-600 transition-colors'
-      />
+      <div className='flex gap-3'>
+        <Button
+          title='Try Again'
+          onClick={onRefresh}
+          btnStyle='flex-1 bg-pink-500 text-white px-4 py-3 rounded-xl hover:bg-pink-600 transition-colors'
+        />
+        {onLogout && (
+          <Button
+            title='Logout'
+            onClick={onLogout}
+            btnStyle='flex-1 bg-red-500 text-white px-4 py-3 rounded-xl hover:bg-red-600 transition-colors'
+          />
+        )}
+      </div>
     </div>
   </div>
 )
 
 // Empty Screen Component
-const EmptyScreen = ({ onRefresh }: { onRefresh: () => void }) => (
+const EmptyScreen = ({
+  onRefresh,
+  onLogout,
+  showLikedOnly,
+  onToggleLikedOnly,
+}: {
+  onRefresh: () => void
+  onLogout?: () => void
+  showLikedOnly?: boolean
+  onToggleLikedOnly?: () => void
+}) => (
   <div className='min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center'>
     <div className='text-center bg-white rounded-3xl p-8 shadow-lg max-w-md mx-4'>
-      <div className='text-6xl mb-4'>😢</div>
+      <div className='text-6xl mb-4'>{showLikedOnly ? '💖' : '😢'}</div>
       <h2 className='text-2xl font-bold text-gray-900 mb-4'>
-        No profiles found
+        {showLikedOnly ? 'No Liked Profiles Yet' : 'No profiles found'}
       </h2>
       <p className='text-gray-600 mb-6'>
-        No potential matches found in your area.
+        {showLikedOnly
+          ? "You haven't liked any profiles yet. Start swiping to build your list!"
+          : 'No potential matches found in your area.'}
       </p>
-      <Button
-        title='Refresh'
-        onClick={onRefresh}
-        btnStyle='bg-pink-500 text-white px-6 py-3 rounded-xl hover:bg-pink-600 transition-colors'
-      />
+      <div className='flex flex-col gap-3'>
+        {showLikedOnly && onToggleLikedOnly ? (
+          <Button
+            title='Show All Profiles'
+            onClick={onToggleLikedOnly}
+            btnStyle='bg-pink-500 text-white px-6 py-3 rounded-xl hover:bg-pink-600 transition-colors'
+          />
+        ) : (
+          <Button
+            title='Refresh'
+            onClick={onRefresh}
+            btnStyle='bg-pink-500 text-white px-6 py-3 rounded-xl hover:bg-pink-600 transition-colors'
+          />
+        )}
+        {onLogout && (
+          <Button
+            title='Logout'
+            onClick={onLogout}
+            btnStyle='bg-red-500 text-white px-6 py-3 rounded-xl hover:bg-red-600 transition-colors'
+          />
+        )}
+      </div>
     </div>
   </div>
 )
@@ -238,19 +2680,23 @@ const ActionButtons = ({
       // Normal mode: Show both pass and like buttons
       <>
         <Button
-          title='❌'
+          title={isLiked ? '💔 Pass' : '❌ Pass'}
           onClick={onPass}
           disabled={disabled}
-          btnStyle='w-16 h-16 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors border border-gray-200 disabled:opacity-50 p-0 min-w-0 text-2xl'
+          btnStyle={`w-24 h-16 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 border-2 disabled:opacity-50 font-medium text-base p-0 min-w-0 ${
+            isLiked
+              ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100 hover:border-red-300'
+              : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300'
+          }`}
         />
         <Button
-          title={isLiked ? '💔' : '💖'}
+          title={isLiked ? '💔 Unlike' : '💖 Like'}
           onClick={onLike}
           disabled={disabled}
-          btnStyle={`w-16 h-16 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 border-2 disabled:opacity-50 p-0 min-w-0 text-2xl ${
+          btnStyle={`w-24 h-16 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 border-2 disabled:opacity-50 font-medium text-base p-0 min-w-0 ${
             isLiked
-              ? 'bg-pink-500 border-pink-500 text-white'
-              : 'bg-white border-gray-200 hover:bg-pink-50 hover:border-pink-300'
+              ? 'bg-gray-100 border-gray-200 text-gray-700 hover:bg-gray-200'
+              : 'bg-pink-500 border-pink-500 text-white hover:bg-pink-600'
           }`}
         />
       </>
@@ -300,6 +2746,13 @@ const UserCard = ({
             {user.distance !== undefined && (
               <div className='absolute top-4 right-4 bg-black/70 text-white px-3 py-2 rounded-full text-sm font-medium backdrop-blur-sm z-10'>
                 {formatDistance(user.distance)}
+              </div>
+            )}
+
+            {/* Show liked badge */}
+            {isLiked && (
+              <div className='absolute top-4 left-4 bg-pink-500 text-white px-3 py-2 rounded-full text-sm font-medium backdrop-blur-sm z-10'>
+                ❤️ Liked
               </div>
             )}
 
@@ -358,11 +2811,6 @@ const UserCard = ({
           </h2>
           <p className='text-gray-600'>{user.gender}</p>
         </div>
-        {isLiked && !showLikedOnly && (
-          <div className='bg-pink-500 text-white px-3 py-1 rounded-full text-sm'>
-            ❤️ Liked
-          </div>
-        )}
         {showLikedOnly && (
           <div className='bg-green-500 text-white px-3 py-1 rounded-full text-sm'>
             💖 Liked
@@ -400,75 +2848,17 @@ const UserCard = ({
   </div>
 )
 
-// Header Component
-const Header = ({
-  onViewProfile,
-  onViewMatches,
-  disabled,
-  showLikedOnly,
-  onToggleLikedOnly,
-  likedUsersCount,
-  onRefresh,
-}: any) => (
-  <header className='bg-white shadow-sm py-4 px-6'>
-    <div className='max-w-2xl mx-auto flex justify-between items-center'>
-      <Button
-        title='👤'
-        onClick={onViewProfile}
-        disabled={disabled}
-        btnStyle='w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors disabled:opacity-50 p-0 min-w-0 text-lg'
-      />
-
-      <div className='flex items-center gap-4'>
-        <Button
-          title='🔄'
-          onClick={onRefresh}
-          disabled={disabled}
-          btnStyle='w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors disabled:opacity-50 p-0 min-w-0 text-lg'
-        />
-
-        <Button
-          title={
-            <div className='flex items-center gap-2'>
-              {showLikedOnly ? '💖' : '💕'}
-              {likedUsersCount > 0 && (
-                <span className='bg-pink-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center'>
-                  {likedUsersCount}
-                </span>
-              )}
-            </div>
-          }
-          onClick={onToggleLikedOnly}
-          disabled={disabled}
-          btnStyle={`w-10 h-10 rounded-full flex items-center justify-center transition-colors disabled:opacity-50 p-0 min-w-0 text-lg ${
-            showLikedOnly
-              ? 'bg-pink-500 text-white'
-              : 'bg-gray-100 hover:bg-gray-200'
-          }`}
-        />
-
-        <h1 className='text-xl font-bold text-gray-900'>
-          {showLikedOnly ? 'Liked Profiles' : 'Discover'}
-        </h1>
-      </div>
-
-      <Button
-        title='💌'
-        onClick={onViewMatches}
-        disabled={disabled}
-        btnStyle='w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors disabled:opacity-50 p-0 min-w-0 text-lg'
-      />
-    </div>
-  </header>
-)
-
 const DiscoveryPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter()
 
-  const { user: authUser, loading: authLoading } = useSelector(
-    (state: RootState) => state.auth
-  )
+  const {
+    user: authUser,
+    loading: authLoading,
+    checkingAuth,
+    error: authError,
+  } = useSelector((state: RootState) => state.auth)
+
   const {
     recommendedUsers,
     loading: recommendationsLoading,
@@ -476,9 +2866,11 @@ const DiscoveryPage: React.FC = () => {
     swipeHistory,
     loadingSwipeHistory,
   } = useSelector((state: RootState) => state.discovery)
+
   const { loading: swipeLoading, lastMatch } = useSelector(
     (state: RootState) => state.swipe
   )
+
   const { user: profileUser, loading: profileLoading } = useSelector(
     (state: RootState) => state.profile
   )
@@ -487,6 +2879,9 @@ const DiscoveryPage: React.FC = () => {
   const [showMatchModal, setShowMatchModal] = useState(false)
   const [hasFetched, setHasFetched] = useState(false)
   const [localLikedUsers, setLocalLikedUsers] = useState<Set<string>>(new Set())
+  const [localPassedUsers, setLocalPassedUsers] = useState<Set<string>>(
+    new Set()
+  )
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
   const [shuffledUsers, setShuffledUsers] = useState<UserProfile[]>([])
   const [showImageModal, setShowImageModal] = useState(false)
@@ -496,6 +2891,13 @@ const DiscoveryPage: React.FC = () => {
   } | null>(null)
   const [showLikedOnly, setShowLikedOnly] = useState(false)
   const [isInitialLoad, setIsInitialLoad] = useState(true)
+
+  // Add authentication states
+  const [initialAuthCheckDone, setInitialAuthCheckDone] = useState(false)
+  const [isRedirecting, setIsRedirecting] = useState(false)
+
+  // Logout modal state
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
 
   // Get gender from profile
   const currentUserGender = useMemo(() => {
@@ -564,24 +2966,55 @@ const DiscoveryPage: React.FC = () => {
     return filteredUsers.filter((user) => localLikedUsers.has(user._id)).length
   }, [filteredUsers, localLikedUsers])
 
-  // Check authentication
+  // Check authentication ONCE when component mounts
   useEffect(() => {
-    if (!authUser) {
+    console.log('🔐 DiscoveryPage: Starting auth check...')
+
+    if (!initialAuthCheckDone) {
       dispatch(checkAuthRequest())
+      setInitialAuthCheckDone(true)
     }
-  }, [authUser, dispatch])
+  }, [dispatch, initialAuthCheckDone])
+
+  // Handle auth check result - FIXED REDIRECT LOGIC
+  useEffect(() => {
+    console.log('🔐 Auth state:', {
+      checkingAuth,
+      authLoading,
+      authUser: !!authUser,
+      isRedirecting,
+    })
+
+    // Only run redirect logic after auth check is complete
+    if (!checkingAuth && !authLoading && !isRedirecting) {
+      console.log('✅ Auth check complete')
+
+      if (!authUser) {
+        console.log('❌ No authenticated user, redirecting to login...')
+        setIsRedirecting(true)
+
+        // Use window.location.replace for a hard redirect
+        // This ensures the page actually redirects
+        setTimeout(() => {
+          window.location.replace('/login')
+        }, 100)
+      }
+    }
+  }, [checkingAuth, authLoading, authUser, isRedirecting])
 
   // Fetch profile when auth user is available
   useEffect(() => {
     if (authUser && !profileUser && !profileLoading) {
+      console.log('👤 Fetching profile for authenticated user')
       dispatch(getProfileRequest())
     }
   }, [authUser, profileUser, profileLoading, dispatch])
 
-  // Initialize swipe history and shuffle users when data is available
+  // Initialize swipe history when data is available
   useEffect(() => {
-    setLocalLikedUsers(new Set(swipeHistory.likedUsers))
-  }, [swipeHistory.likedUsers])
+    setLocalLikedUsers(new Set(swipeHistory.likedUsers || []))
+    setLocalPassedUsers(new Set(swipeHistory.passedUsers || []))
+  }, [swipeHistory.likedUsers, swipeHistory.passedUsers])
 
   // Reset photo index when current index changes
   useEffect(() => {
@@ -594,7 +3027,61 @@ const DiscoveryPage: React.FC = () => {
     setCurrentPhotoIndex(0)
   }, [showLikedOnly])
 
-  // MAIN DATA FETCHING LOGIC - FIXED
+  // FIXED: Optimized geolocation fetching - using useCallback
+  const fetchRecommendations = useCallback(
+    (latitude?: number, longitude?: number) => {
+      console.log('📍 Fetching recommendations with location:', {
+        latitude,
+        longitude,
+      })
+
+      if (latitude && longitude) {
+        dispatch(
+          getRecommendationsRequest({
+            latitude,
+            longitude,
+          })
+        )
+      } else {
+        dispatch(getRecommendationsRequest({}))
+      }
+
+      setHasFetched(true)
+    },
+    [dispatch]
+  )
+
+  // FIXED: Optimized geolocation function
+  const getLocationAndFetch = useCallback(() => {
+    if (navigator.geolocation) {
+      console.log('📍 Attempting to get user location...')
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords
+          console.log('📍 User location captured:', { latitude, longitude })
+          setUserLocation({ latitude, longitude })
+          fetchRecommendations(latitude, longitude)
+        },
+        (error) => {
+          console.log('⚠️ Geolocation error or denied:', error.message)
+          setUserLocation(null)
+          fetchRecommendations()
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 5000,
+          maximumAge: 30000,
+        }
+      )
+    } else {
+      console.log('📍 Geolocation not supported')
+      setUserLocation(null)
+      fetchRecommendations()
+    }
+  }, [fetchRecommendations])
+
+  // FIXED: OPTIMIZED MAIN DATA FETCHING LOGIC
   useEffect(() => {
     // Only fetch if we have auth user and profile, and haven't fetched yet
     if (authUser && profileUser && !hasFetched && isInitialLoad) {
@@ -603,39 +3090,22 @@ const DiscoveryPage: React.FC = () => {
       // Set loading state
       setIsInitialLoad(true)
 
-      // First, get swipe history
+      // Fetch swipe history immediately
       dispatch(getSwipeHistoryRequest())
 
-      // Then get user location and recommendations
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const { latitude, longitude } = position.coords
-            setUserLocation({ latitude, longitude })
-            console.log('📍 User location captured:', { latitude, longitude })
-            dispatch(getRecommendationsRequest({ latitude, longitude }))
-            setHasFetched(true)
-          },
-          (error) => {
-            console.error('❌ Error getting user location:', error)
-            setUserLocation(null)
-            dispatch(getRecommendationsRequest({}))
-            setHasFetched(true)
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 60000,
-          }
-        )
-      } else {
-        console.log('📍 Geolocation not supported')
-        setUserLocation(null)
-        dispatch(getRecommendationsRequest({}))
-        setHasFetched(true)
-      }
+      // Start geolocation and recommendations with a small delay
+      setTimeout(() => {
+        getLocationAndFetch()
+      }, 50)
     }
-  }, [authUser, profileUser, hasFetched, isInitialLoad, dispatch])
+  }, [
+    authUser,
+    profileUser,
+    hasFetched,
+    isInitialLoad,
+    dispatch,
+    getLocationAndFetch,
+  ])
 
   // Shuffle users when recommendations are loaded
   useEffect(() => {
@@ -691,29 +3161,35 @@ const DiscoveryPage: React.FC = () => {
     }
   }
 
-  // Pass button: moves to next profile with circular navigation
+  // FIXED: Pass button - Updated logic
   const handlePass = () => {
     if (currentIndex >= displayUsers.length || !authUser) return
 
     const swipedUser = displayUsers[currentIndex]
     const currentUserId = swipedUser._id
+    const isCurrentlyLiked = localLikedUsers.has(currentUserId)
 
-    // Only create pass if not already liked
-    if (!localLikedUsers.has(currentUserId)) {
-      dispatch(addPassedUser(currentUserId))
-      dispatch(
-        createSwipeRequest({
-          swipedUserId: currentUserId,
-          action: 'pass',
-        })
-      )
+    if (isCurrentlyLiked) {
+      // Case 4: Pass on liked profile → Just go to next profile, don't change status
+      console.log('🚀 Pass on liked profile - just moving to next profile')
+      goToNextProfile()
+    } else {
+      // Case 1: Pass on non-liked profile → Mark as passed and go to next profile
+      if (!localPassedUsers.has(currentUserId)) {
+        setLocalPassedUsers((prev) => new Set([...prev, currentUserId]))
+        dispatch(addPassedUser(currentUserId))
+        dispatch(
+          createSwipeRequest({
+            swipedUserId: currentUserId,
+            action: 'pass',
+          })
+        )
+      }
+      goToNextProfile()
     }
-
-    // ALWAYS move to next profile (with circular navigation)
-    goToNextProfile()
   }
 
-  // Like button: ONLY toggles like/pass on current profile, doesn't move to next profile
+  // FIXED: Like button - UPDATED to sync properly with Redux
   const handleLike = () => {
     if (currentIndex >= displayUsers.length || !authUser) return
 
@@ -722,13 +3198,26 @@ const DiscoveryPage: React.FC = () => {
     const isCurrentlyLiked = localLikedUsers.has(currentUserId)
 
     if (isCurrentlyLiked) {
-      // Change from like to pass
+      // Case 3: Unlike on liked profile → Change to pass
+      console.log('💔 Unlike clicked - changing to pass')
+
+      // Update local state IMMEDIATELY
       setLocalLikedUsers((prev) => {
         const newSet = new Set(prev)
         newSet.delete(currentUserId)
         return newSet
       })
-      dispatch(addPassedUser(currentUserId))
+      setLocalPassedUsers((prev) => new Set([...prev, currentUserId]))
+
+      // If you have updateLikeToPass action, use it:
+      if (updateLikeToPass) {
+        dispatch(updateLikeToPass(currentUserId))
+      } else {
+        // Otherwise use addPassedUser
+        dispatch(addPassedUser(currentUserId))
+      }
+
+      // Send API request
       dispatch(
         createSwipeRequest({
           swipedUserId: currentUserId,
@@ -736,9 +3225,21 @@ const DiscoveryPage: React.FC = () => {
         })
       )
     } else {
-      // Change from pass to like
+      // Case 2: Like on non-liked profile → Mark as liked
+      console.log('💖 Like clicked - marking as liked')
+
+      // Update local state IMMEDIATELY
       setLocalLikedUsers((prev) => new Set([...prev, currentUserId]))
+      setLocalPassedUsers((prev) => {
+        const newSet = new Set(prev)
+        newSet.delete(currentUserId)
+        return newSet
+      })
+
+      // Update Redux
       dispatch(addLikedUser(currentUserId))
+
+      // Send API request
       dispatch(
         createSwipeRequest({
           swipedUserId: currentUserId,
@@ -746,7 +3247,7 @@ const DiscoveryPage: React.FC = () => {
         })
       )
     }
-    // DO NOT move to next profile
+    // Stay on current profile
   }
 
   // Photo gallery functions
@@ -804,12 +3305,104 @@ const DiscoveryPage: React.FC = () => {
   const handleViewProfile = () => router.push('/profile')
   const handleViewMatches = () => router.push('/matches')
 
+  // Logout handlers
+  const openLogoutModal = () => {
+    setShowLogoutModal(true)
+  }
+
+  const Header = ({
+    onViewProfile,
+    onViewMatches,
+    disabled,
+    showLikedOnly,
+    onToggleLikedOnly,
+    likedUsersCount,
+    onRefresh,
+  }: any) => (
+    <header className='bg-white shadow-sm py-4 px-6'>
+      <div className='max-w-2xl mx-auto flex justify-between items-center'>
+        <Button
+          title='👤'
+          onClick={onViewProfile}
+          disabled={disabled}
+          btnStyle='w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors disabled:opacity-50 p-0 min-w-0 text-lg'
+        />
+
+        <div className='flex items-center gap-4'>
+          <Button
+            title='🔄'
+            onClick={onRefresh}
+            disabled={disabled}
+            btnStyle='w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors disabled:opacity-50 p-0 min-w-0 text-lg'
+          />
+
+          <Button
+            title={
+              <div className='flex items-center gap-2'>
+                {showLikedOnly ? '💖' : '💕'}
+                {likedUsersCount > 0 && (
+                  <span className='bg-pink-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center'>
+                    {likedUsersCount}
+                  </span>
+                )}
+              </div>
+            }
+            onClick={onToggleLikedOnly}
+            disabled={disabled}
+            btnStyle={`w-10 h-10 rounded-full flex items-center justify-center transition-colors disabled:opacity-50 p-0 min-w-0 text-lg ${
+              showLikedOnly
+                ? 'bg-pink-500 text-white'
+                : 'bg-gray-100 hover:bg-gray-200'
+            }`}
+          />
+
+          <h1 className='text-xl font-bold text-gray-900'>
+            {showLikedOnly ? 'Liked Profiles' : 'Discover'}
+          </h1>
+        </div>
+
+        <div className='flex items-center gap-2'>
+          <Button
+            title='💌'
+            onClick={onViewMatches}
+            disabled={disabled}
+            btnStyle='w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors disabled:opacity-50 p-0 min-w-0 text-lg'
+          />
+
+          {/* LOGOUT BUTTON - Using custom modal */}
+          <Button
+            title='🚪'
+            onClick={openLogoutModal}
+            disabled={disabled}
+            btnStyle='w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center hover:bg-red-200 transition-colors disabled:opacity-50 p-0 min-w-0 text-lg'
+          />
+        </div>
+      </div>
+    </header>
+  )
+
+  const handleLogout = () => {
+    if (window.confirm('Are you sure you want to logout?')) {
+      dispatch(logoutRequest())
+    }
+  }
+
+  const confirmLogout = () => {
+    dispatch(logoutRequest())
+    setShowLogoutModal(false)
+  }
+
+  const cancelLogout = () => {
+    setShowLogoutModal(false)
+  }
+
   const handleRefresh = () => {
     console.log('🔄 Manual refresh triggered')
     setHasFetched(false)
     setIsInitialLoad(true)
     setCurrentIndex(0)
     setLocalLikedUsers(new Set())
+    setLocalPassedUsers(new Set())
     setCurrentPhotoIndex(0)
     setShuffledUsers([])
     setShowLikedOnly(false)
@@ -817,18 +3410,10 @@ const DiscoveryPage: React.FC = () => {
     // Clear existing data and refetch
     if (authUser) {
       dispatch(getSwipeHistoryRequest())
-      dispatch(getProfileRequest()) // Re-fetch profile to ensure we have latest data
+      dispatch(getProfileRequest())
 
-      if (userLocation) {
-        dispatch(
-          getRecommendationsRequest({
-            latitude: userLocation.latitude,
-            longitude: userLocation.longitude,
-          })
-        )
-      } else {
-        dispatch(getRecommendationsRequest({}))
-      }
+      // Use the optimized location function
+      getLocationAndFetch()
     }
   }
 
@@ -844,21 +3429,37 @@ const DiscoveryPage: React.FC = () => {
 
   const isLiked = isCurrentUserLiked()
 
-  // Improved loading logic
-  const isLoading =
+  // IMPROVED loading logic
+  const showLoading =
+    checkingAuth ||
     authLoading ||
-    profileLoading ||
+    (isInitialLoad && !authUser) ||
+    (profileLoading && !profileUser) ||
     (isInitialLoad && recommendationsLoading) ||
     (isInitialLoad && loadingSwipeHistory)
 
-  // Show loading screen during initial data fetch
-  if (!authUser || isLoading) {
-    return <LoadingScreen />
+  // Show loading during auth check
+  if (checkingAuth || authLoading) {
+    return <LoadingScreen message='Checking authentication...' />
+  }
+
+  // Show redirect message if not authenticated
+  if (!authUser && !checkingAuth && !authLoading) {
+    return <LoadingScreen message='Redirecting to login...' />
+  }
+
+  // Show loading while fetching data
+  if (showLoading) {
+    return <LoadingScreen message='Loading discovery...' />
   }
 
   if (recommendationsError) {
     return (
-      <ErrorScreen error={recommendationsError} onRefresh={handleRefresh} />
+      <ErrorScreen
+        error={recommendationsError}
+        onRefresh={handleRefresh}
+        onLogout={handleLogout}
+      />
     )
   }
 
@@ -870,52 +3471,21 @@ const DiscoveryPage: React.FC = () => {
       showLikedOnly
     ) {
       return (
-        <div className='min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center'>
-          <div className='text-center bg-white rounded-3xl p-8 shadow-lg max-w-md mx-4'>
-            <div className='text-6xl mb-4'>💖</div>
-            <h2 className='text-2xl font-bold text-gray-900 mb-4'>
-              No Liked Profiles Yet
-            </h2>
-            <p className='text-gray-600 mb-6'>
-              You haven't liked any profiles yet. Start swiping to build your
-              list!
-            </p>
-            <Button
-              title='Show All Profiles'
-              onClick={toggleLikedOnly}
-              btnStyle='bg-pink-500 text-white px-6 py-3 rounded-xl hover:bg-pink-600 transition-colors'
-            />
-          </div>
-        </div>
+        <EmptyScreen
+          onRefresh={handleRefresh}
+          onLogout={handleLogout}
+          showLikedOnly={showLikedOnly}
+          onToggleLikedOnly={toggleLikedOnly}
+        />
       )
     }
 
     if (displayUsers.length === 0 && recommendedUsers.length > 0) {
-      return (
-        <div className='min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center'>
-          <div className='text-center bg-white rounded-3xl p-8 shadow-lg max-w-md mx-4'>
-            <div className='text-6xl mb-4'>🔍</div>
-            <h2 className='text-2xl font-bold text-gray-900 mb-4'>
-              No {currentUserGender === 'male' ? 'Female' : 'Male'} Profiles
-              Found
-            </h2>
-            <p className='text-gray-600 mb-6'>
-              {currentUserGender === 'male'
-                ? 'No female profiles found in your area. Try refreshing or adjusting your location.'
-                : 'No male profiles found in your area. Try refreshing or adjusting your location.'}
-            </p>
-            <Button
-              title='Refresh'
-              onClick={handleRefresh}
-              btnStyle='bg-pink-500 text-white px-6 py-3 rounded-xl hover:bg-pink-600 transition-colors'
-            />
-          </div>
-        </div>
-      )
+      return <EmptyScreen onRefresh={handleRefresh} onLogout={handleLogout} />
     }
 
     if (displayUsers.length === 0) {
-      return <EmptyScreen onRefresh={handleRefresh} />
+      return <EmptyScreen onRefresh={handleRefresh} onLogout={handleLogout} />
     }
   }
 
@@ -950,10 +3520,36 @@ const DiscoveryPage: React.FC = () => {
         />
       )}
 
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4'>
+          <div className='bg-white rounded-2xl p-6 max-w-sm w-full'>
+            <h3 className='text-xl font-bold text-gray-900 mb-2'>
+              Confirm Logout
+            </h3>
+            <p className='text-gray-600 mb-6'>
+              Are you sure you want to logout?
+            </p>
+            <div className='flex gap-3'>
+              <Button
+                title='Cancel'
+                onClick={cancelLogout}
+                btnStyle='flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium'
+              />
+              <Button
+                title='Logout'
+                onClick={confirmLogout}
+                btnStyle='flex-1 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium'
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       <Header
         onViewProfile={handleViewProfile}
         onViewMatches={handleViewMatches}
-        disabled={swipeLoading}
+        disabled={swipeLoading || showLoading}
         showLikedOnly={showLikedOnly}
         onToggleLikedOnly={toggleLikedOnly}
         likedUsersCount={likedUsersCount}

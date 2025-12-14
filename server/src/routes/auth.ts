@@ -19,13 +19,95 @@ const transporter = nodemailer.createTransport({
 })
 
 // Add to auth routes
-router.post('/logout', (req: express.Request, res: express.Response) => {
-  res.clearCookie('token', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-  })
-  res.json({ message: 'Logout successful' })
+// router.post('/logout', (req: express.Request, res: express.Response) => {
+//   res.clearCookie('token', {
+//     httpOnly: true,
+//     secure: process.env.NODE_ENV === 'production',
+//     sameSite: 'strict',
+//   })
+//   res.json({ message: 'Logout successful' })
+// })
+// router.post('/logout', (req: express.Request, res: express.Response) => {
+//   try {
+//     // Get token from cookie
+//     const token = req.cookies?.token
+
+//     if (token) {
+//       // You can optionally blacklist the token here if needed
+//       console.log(
+//         '🔒 User logging out with token:',
+//         token.substring(0, 20) + '...'
+//       )
+//     }
+
+//     // Clear the cookie
+//     res.clearCookie('token', {
+//       httpOnly: true,
+//       secure: process.env.NODE_ENV === 'production',
+//       sameSite: 'strict',
+//       path: '/', // Important: clear cookie for all paths
+//     })
+
+//     // Also clear any other auth cookies you might have
+//     res.clearCookie('refreshToken', {
+//       httpOnly: true,
+//       secure: process.env.NODE_ENV === 'production',
+//       sameSite: 'strict',
+//       path: '/',
+//     })
+
+//     console.log('✅ Logout successful')
+//     res.json({
+//       success: true,
+//       message: 'Logout successful',
+//     })
+//   } catch (error) {
+//     console.error('❌ Logout error:', error)
+//     res.status(500).json({
+//       success: false,
+//       message: 'Logout failed',
+//     })
+//   }
+// })
+// In your auth routes (backend)
+router.post('/logout', auth, async (req, res) => {
+  try {
+    // Clear JWT token cookie
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+    })
+
+    // ALSO clear the session cookie
+    res.clearCookie('connect.sid', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+    })
+
+    // Clear session if using express-session
+    if (req.session) {
+      req.session.destroy((err) => {
+        if (err) {
+          console.error('Session destruction error:', err)
+        }
+      })
+    }
+
+    res.json({
+      message: 'Logout successful',
+      logout: true,
+    })
+  } catch (error: any) {
+    console.error('Logout error:', error)
+    res.status(500).json({
+      message: 'Logout failed',
+      error: error.message,
+    })
+  }
 })
 router.get(
   '/google',
@@ -800,34 +882,32 @@ router.get('/test-cookies', (req: express.Request, res: express.Response) => {
   })
 })
 
-// routes/auth.ts - Add this route
-router.get('/check', auth, async (req: any, res: Response) => {
+router.get('/check', auth, async (req: any, res) => {
   try {
-    console.log('🔐 Auth check for user:', req.user.id)
-
     // Get fresh user data from database
-    const user = await User.findById(req.user.id).select(
-      '-password -otp -resetPasswordOTP'
+    const user = await User.findById(req.user?.id).select(
+      '-password -otp -resetPasswordOTP -__v'
     )
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' })
     }
 
+    // Update last active timestamp
+    user.lastActive = new Date()
+    await user.save()
+
     res.json({
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        age: user.age,
-        bio: user.bio,
-        interests: user.interests,
-        photos: user.photos,
-      },
+      user,
+      authenticated: true,
+      timestamp: new Date().toISOString(),
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Auth check error:', error)
-    res.status(500).json({ message: 'Server error' })
+    res.status(500).json({
+      message: 'Auth check failed',
+      error: error.message,
+    })
   }
 })
 

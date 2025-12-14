@@ -210,6 +210,24 @@ const discoverySlice = createSlice({
       state.loadingSwipeHistory = false
       state.error = action.payload
     },
+    clearDiscovery: (state) => {
+      state.recommendedUsers = []
+      state.swipeHistory = { likedUsers: [], passedUsers: [] }
+      state.loading = false
+      state.loadingSwipeHistory = false
+      state.error = null
+    },
+    updateLikeToPass: (state, action: PayloadAction<string>) => {
+      const userId = action.payload
+      // Remove from liked users
+      state.swipeHistory.likedUsers = state.swipeHistory.likedUsers.filter(
+        (id) => id !== userId
+      )
+      // Add to passed users if not already there
+      if (!state.swipeHistory.passedUsers.includes(userId)) {
+        state.swipeHistory.passedUsers.push(userId)
+      }
+    },
   },
 })
 
@@ -226,6 +244,8 @@ export const {
   clearRecommendations,
   clearSwipeHistory,
   clearError,
+  clearDiscovery,
+  updateLikeToPass,
 } = discoverySlice.actions
 
 export default discoverySlice.reducer

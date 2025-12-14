@@ -12,6 +12,7 @@
 //   clearError,
 // } from '../../store/slices/profileSlice'
 // import { checkAuthRequest } from '../../store/slices/authSlice'
+// import Button from '../../components/Button' // Import your Button component
 
 // interface ProfileFormData {
 //   name: string
@@ -87,8 +88,7 @@
 //   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
 //     const files = e.target.files
 //     if (files && files.length > 0) {
-//       // Check file sizes before uploading
-//       const maxSize = 10 * 1024 * 1024 // 10MB in bytes
+//       const maxSize = 10 * 1024 * 1024
 //       const oversizedFiles = Array.from(files).filter(
 //         (file) => file.size > maxSize
 //       )
@@ -139,7 +139,10 @@
 //     }
 //   }
 
-//   // Check authentication
+//   const handleGoToDiscovery = () => {
+//     router.push('/discovery')
+//   }
+
 //   useEffect(() => {
 //     if (!hasCheckedAuth) {
 //       dispatch(checkAuthRequest())
@@ -147,7 +150,6 @@
 //     }
 //   }, [dispatch, hasCheckedAuth])
 
-//   // Handle auth check result
 //   useEffect(() => {
 //     if (!checkingAuth && !authUser && hasCheckedAuth) {
 //       router.push('/login')
@@ -156,14 +158,12 @@
 
 //   const userId = authUser?.id || authUser?._id
 
-//   // Load profile if user is authenticated
 //   useEffect(() => {
 //     if (!checkingAuth && authUser && userId && !profileUser && !loading) {
 //       dispatch(getProfileRequest())
 //     }
 //   }, [authUser, userId, profileUser, loading, checkingAuth, dispatch])
 
-//   // Set form data when profile loads
 //   useEffect(() => {
 //     if (profileUser) {
 //       console.log('✅ Profile loaded:', profileUser)
@@ -178,7 +178,6 @@
 //     }
 //   }, [profileUser])
 
-//   // Get current location and convert to place name
 //   const getCurrentLocation = async () => {
 //     if (navigator.geolocation) {
 //       navigator.geolocation.getCurrentPosition(
@@ -196,7 +195,6 @@
 //               location: locationName,
 //             }))
 
-//             // Save the coordinates immediately when location is detected
 //             const updateData: any = {
 //               name: formData.name.trim(),
 //               bio: formData.bio.trim(),
@@ -205,8 +203,8 @@
 //               ),
 //               location: locationName.trim(),
 //               gender: formData.gender,
-//               latitude: latitude, // ADD THIS
-//               longitude: longitude, // ADD THIS
+//               latitude: latitude,
+//               longitude: longitude,
 //             }
 
 //             if (formData.age) {
@@ -225,7 +223,6 @@
 //               location: fallbackLocation,
 //             }))
 
-//             // Even if reverse geocoding fails, save the coordinates
 //             const updateData: any = {
 //               name: formData.name.trim(),
 //               bio: formData.bio.trim(),
@@ -234,8 +231,8 @@
 //               ),
 //               location: fallbackLocation.trim(),
 //               gender: formData.gender,
-//               latitude: latitude, // ADD THIS
-//               longitude: longitude, // ADD THIS
+//               latitude: latitude,
+//               longitude: longitude,
 //             }
 
 //             if (formData.age) {
@@ -265,7 +262,6 @@
 //     }
 //   }
 
-//   // Handle message and error states
 //   useEffect(() => {
 //     if (message) {
 //       setIsSaving(false)
@@ -293,7 +289,6 @@
 //   const handleSubmit = (e: React.FormEvent) => {
 //     e.preventDefault()
 
-//     // Validate form data
 //     if (!formData.name.trim()) {
 //       alert('Please enter your name')
 //       return
@@ -317,7 +312,6 @@
 //       ),
 //       location: formData.location.trim(),
 //       gender: formData.gender,
-//       // Note: We're not including latitude/longitude here since user might be entering location manually
 //     }
 
 //     if (formData.age) {
@@ -338,7 +332,6 @@
 //     }))
 //   }
 
-//   // Interest management functions
 //   const addInterest = () => {
 //     if (
 //       currentInterest.trim() &&
@@ -366,7 +359,6 @@
 //     }
 //   }
 
-//   // Gallery functions
 //   const openGallery = (index: number) => {
 //     setSelectedPhotoIndex(index)
 //     setIsClosing(false)
@@ -399,7 +391,6 @@
 //     setSelectedPhotoIndex(newIndex)
 //   }
 
-//   // Keyboard navigation for gallery
 //   useEffect(() => {
 //     const handleKeyDown = (e: KeyboardEvent) => {
 //       if (selectedPhotoIndex === null) return
@@ -421,7 +412,6 @@
 //     return () => window.removeEventListener('keydown', handleKeyDown)
 //   }, [selectedPhotoIndex, profileUser?.photos])
 
-//   // Show loading while checking authentication
 //   if (checkingAuth) {
 //     return (
 //       <div className='flex justify-center items-center min-h-screen'>
@@ -433,7 +423,6 @@
 //     )
 //   }
 
-//   // Show loading while profile is being fetched
 //   if ((loading && !profileUser) || (authUser && !profileUser)) {
 //     return (
 //       <div className='flex justify-center items-center min-h-screen'>
@@ -446,15 +435,13 @@
 //   }
 
 //   return (
-//     <div className='min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 py-8 px-4'>
+//     <div className='min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 py-4 px-3 sm:py-8 sm:px-4'>
 //       <div className='max-w-4xl mx-auto'>
 //         {/* Header Section */}
-//         <div className='bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden mb-8'>
-//           {/* Profile Header with Background */}
-//           <div className='bg-gradient-to-r from-pink-500 to-purple-600 h-32 relative'>
-//             <div className='absolute -bottom-16 left-8'>
-//               {/* Circular Profile Photo */}
-//               <div className='w-32 h-32 rounded-full border-4 border-white shadow-lg bg-white overflow-hidden'>
+//         <div className='bg-white rounded-2xl sm:rounded-3xl shadow-lg border border-gray-100 overflow-hidden mb-6 sm:mb-8'>
+//           <div className='bg-gradient-to-r from-pink-500 to-purple-600 h-24 sm:h-32 relative'>
+//             <div className='absolute -bottom-12 sm:-bottom-16 left-4 sm:left-8'>
+//               <div className='w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-white shadow-lg bg-white overflow-hidden'>
 //                 {profileUser?.photos && profileUser.photos.length > 0 ? (
 //                   <img
 //                     src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${profileUser.photos[0]}`}
@@ -464,7 +451,7 @@
 //                   />
 //                 ) : (
 //                   <div className='w-full h-full bg-gray-200 flex items-center justify-center'>
-//                     <span className='text-gray-500 text-sm font-medium'>
+//                     <span className='text-gray-500 text-xs sm:text-sm font-medium'>
 //                       Add Photo
 //                     </span>
 //                   </div>
@@ -473,21 +460,20 @@
 //             </div>
 //           </div>
 
-//           {/* Profile Content */}
-//           <div className='pt-20 px-8 pb-8'>
-//             <div className='flex justify-between items-start mb-6'>
-//               <div>
-//                 <div className='flex items-center gap-3 mb-2'>
-//                   <h1 className='text-3xl font-bold text-gray-900'>
+//           <div className='pt-16 sm:pt-20 px-4 sm:px-8 pb-6 sm:pb-8'>
+//             <div className='flex flex-col md:flex-row md:justify-between md:items-start gap-4 mb-6'>
+//               <div className='flex-1 min-w-0'>
+//                 <div className='flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2'>
+//                   <h1 className='text-2xl sm:text-3xl font-bold text-gray-900 break-words'>
 //                     {isEditing ? (
-//                       <div className='flex items-center gap-3'>
+//                       <div className='flex flex-col sm:flex-row gap-2 sm:gap-3 items-start sm:items-center'>
 //                         <input
 //                           type='text'
 //                           value={formData.name}
 //                           onChange={(e) =>
 //                             handleInputChange('name', e.target.value)
 //                           }
-//                           className='border-b-2 border-gray-300 focus:border-pink-500 outline-none text-3xl font-bold bg-transparent'
+//                           className='border-b-2 border-gray-300 focus:border-pink-500 outline-none text-xl sm:text-3xl font-bold bg-transparent w-full sm:w-auto min-w-[120px]'
 //                           placeholder='Your name'
 //                           disabled={isSaving}
 //                         />
@@ -518,27 +504,35 @@
 //                     )}
 //                   </h1>
 //                 </div>
-//                 <p className='text-gray-500 text-lg flex items-center gap-2'>
+//                 <p className='text-gray-500 text-base sm:text-lg flex items-center gap-2 break-words'>
 //                   📍{' '}
 //                   {formData.location || profileUser?.location || 'Add location'}
 //                 </p>
 //               </div>
-//               <button
-//                 onClick={() => setIsEditing(!isEditing)}
-//                 disabled={isSaving || loading}
-//                 className='bg-pink-500 text-white px-6 py-3 rounded-xl hover:bg-pink-600 transition-colors disabled:opacity-50 font-medium shadow-sm'
-//               >
-//                 {isEditing ? 'Cancel' : 'Edit Profile'}
-//               </button>
+
+//               {/* Action Buttons using Button component */}
+//               <div className='flex flex-row justify-stretch sm:justify-start md:justify-end gap-3 w-full md:w-auto'>
+//                 <Button
+//                   title='🔍 Discover'
+//                   onClick={handleGoToDiscovery}
+//                   btnStyle='bg-blue-500 text-white px-4 sm:px-5 py-2 sm:py-3 rounded-xl hover:bg-blue-600 transition-colors disabled:opacity-50 font-medium shadow-sm text-sm sm:text-base flex-1 md:flex-none text-center min-w-[100px]'
+//                 />
+//                 <Button
+//                   title={isEditing ? 'Cancel' : 'Edit Profile'}
+//                   onClick={() => setIsEditing(!isEditing)}
+//                   disabled={isSaving || loading}
+//                   btnStyle='bg-pink-500 text-white px-4 sm:px-5 py-2 sm:py-3 rounded-xl hover:bg-pink-600 transition-colors disabled:opacity-50 font-medium shadow-sm text-sm sm:text-base flex-1 md:flex-none text-center min-w-[100px]'
+//                 />
+//               </div>
 //             </div>
 
 //             {/* Gender Section */}
-//             <div className='mb-8'>
-//               <h3 className='text-lg font-semibold text-gray-900 mb-3'>
+//             <div className='mb-6 sm:mb-8'>
+//               <h3 className='text-base sm:text-lg font-semibold text-gray-900 mb-3'>
 //                 Gender
 //               </h3>
 //               {isEditing ? (
-//                 <div className='flex gap-4'>
+//                 <div className='flex flex-col sm:flex-row gap-3 sm:gap-4'>
 //                   {['Male', 'Female', 'Other'].map((genderOption) => (
 //                     <label
 //                       key={genderOption}
@@ -555,34 +549,36 @@
 //                         disabled={isSaving}
 //                         className='w-4 h-4 text-pink-500 focus:ring-pink-500'
 //                       />
-//                       <span className='text-gray-700'>{genderOption}</span>
+//                       <span className='text-gray-700 text-sm sm:text-base'>
+//                         {genderOption}
+//                       </span>
 //                     </label>
 //                   ))}
 //                 </div>
 //               ) : (
-//                 <p className='text-gray-700 text-lg'>
+//                 <p className='text-gray-700 text-base sm:text-lg'>
 //                   {formData.gender || profileUser?.gender || 'Not specified'}
 //                 </p>
 //               )}
 //             </div>
 
 //             {/* About Me Section */}
-//             <div className='mb-8'>
-//               <h2 className='text-xl font-semibold text-gray-900 mb-4'>
+//             <div className='mb-6 sm:mb-8'>
+//               <h2 className='text-lg sm:text-xl font-semibold text-gray-900 mb-4'>
 //                 About Me
 //               </h2>
 //               {isEditing ? (
 //                 <textarea
 //                   value={formData.bio}
 //                   onChange={(e) => handleInputChange('bio', e.target.value)}
-//                   className='w-full border border-gray-200 rounded-xl p-4 focus:border-pink-500 outline-none resize-none bg-gray-50'
-//                   rows={4}
+//                   className='w-full border border-gray-200 rounded-xl p-3 sm:p-4 focus:border-pink-500 outline-none resize-none bg-gray-50 text-sm sm:text-base'
+//                   rows={3}
 //                   placeholder='Tell us about yourself...'
 //                   maxLength={500}
 //                   disabled={isSaving}
 //                 />
 //               ) : (
-//                 <p className='text-gray-700 text-lg leading-relaxed'>
+//                 <p className='text-gray-700 text-base sm:text-lg leading-relaxed'>
 //                   {profileUser?.bio ||
 //                     "I'm a creative soul with a passion for art, music, and exploring new cultures. Let's connect and share our stories!"}
 //                 </p>
@@ -591,36 +587,36 @@
 
 //             {/* Location Section */}
 //             {isEditing && (
-//               <div className='mb-8'>
-//                 <h3 className='text-lg font-semibold text-gray-900 mb-3'>
+//               <div className='mb-6 sm:mb-8'>
+//                 <h3 className='text-base sm:text-lg font-semibold text-gray-900 mb-3'>
 //                   Location
 //                 </h3>
 //                 <div className='space-y-3'>
-//                   <div className='flex gap-3'>
+//                   <div className='flex flex-col sm:flex-row gap-3'>
 //                     <input
 //                       type='text'
 //                       value={formData.location}
 //                       onChange={(e) =>
 //                         handleInputChange('location', e.target.value)
 //                       }
-//                       className='flex-1 border border-gray-200 rounded-xl p-3 focus:border-pink-500 outline-none bg-gray-50'
+//                       className='flex-1 border border-gray-200 rounded-xl p-3 focus:border-pink-500 outline-none bg-gray-50 text-sm sm:text-base'
 //                       placeholder='Enter your location (e.g., San Francisco, CA)'
 //                       disabled={isSaving}
 //                     />
-//                     <button
-//                       type='button'
+//                     <Button
+//                       title={
+//                         isConvertingLocation ? (
+//                           <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-white mx-auto'></div>
+//                         ) : (
+//                           'Use Current'
+//                         )
+//                       }
 //                       onClick={getCurrentLocation}
 //                       disabled={isConvertingLocation || isSaving}
-//                       className='bg-gray-500 text-white px-4 py-3 rounded-xl hover:bg-gray-600 transition-colors whitespace-nowrap disabled:opacity-50 font-medium'
-//                     >
-//                       {isConvertingLocation ? (
-//                         <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-white mx-auto'></div>
-//                       ) : (
-//                         'Use Current'
-//                       )}
-//                     </button>
+//                       btnStyle='bg-gray-500 text-white px-4 py-3 rounded-xl hover:bg-gray-600 transition-colors whitespace-nowrap disabled:opacity-50 font-medium text-sm sm:text-base'
+//                     />
 //                   </div>
-//                   <p className='text-sm text-gray-500'>
+//                   <p className='text-xs sm:text-sm text-gray-500'>
 //                     Using "Use Current" will save your GPS coordinates for
 //                     accurate distance calculations in Discovery.
 //                   </p>
@@ -629,63 +625,59 @@
 //             )}
 
 //             {/* Interests Section */}
-//             <div className='mb-8'>
-//               <h3 className='text-lg font-semibold text-gray-900 mb-4'>
+//             <div className='mb-6 sm:mb-8'>
+//               <h3 className='text-base sm:text-lg font-semibold text-gray-900 mb-4'>
 //                 Interests
 //               </h3>
 //               {isEditing ? (
 //                 <div className='space-y-4'>
-//                   <div className='flex gap-3'>
+//                   <div className='flex flex-col sm:flex-row gap-3'>
 //                     <input
 //                       type='text'
 //                       value={currentInterest}
 //                       onChange={(e) => setCurrentInterest(e.target.value)}
 //                       onKeyPress={handleInterestKeyPress}
-//                       className='flex-1 border border-gray-200 rounded-xl p-3 focus:border-pink-500 outline-none bg-gray-50'
+//                       className='flex-1 border border-gray-200 rounded-xl p-3 focus:border-pink-500 outline-none bg-gray-50 text-sm sm:text-base'
 //                       placeholder='Add an interest'
 //                       disabled={isSaving}
 //                     />
-//                     <button
-//                       type='button'
+//                     <Button
+//                       title='Add'
 //                       onClick={addInterest}
 //                       disabled={isSaving}
-//                       className='bg-pink-500 text-white px-6 py-3 rounded-xl hover:bg-pink-600 transition-colors font-medium disabled:opacity-50'
-//                     >
-//                       Add
-//                     </button>
+//                       btnStyle='bg-pink-500 text-white px-4 sm:px-6 py-3 rounded-xl hover:bg-pink-600 transition-colors font-medium disabled:opacity-50 text-sm sm:text-base'
+//                     />
 //                   </div>
 
 //                   <div className='flex flex-wrap gap-2'>
 //                     {formData.interests.map((interest, index) => (
 //                       <div
 //                         key={index}
-//                         className='bg-pink-100 text-pink-800 px-4 py-2 rounded-full text-sm flex items-center gap-2 font-medium'
+//                         className='bg-pink-100 text-pink-800 px-3 py-1 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm flex items-center gap-2 font-medium'
 //                       >
 //                         {interest}
-//                         <button
-//                           type='button'
+//                         <Button
+//                           title='×'
 //                           onClick={() => removeInterest(index)}
-//                           className='text-pink-600 hover:text-pink-800 text-sm disabled:opacity-50'
+//                           btnStyle='text-pink-600 hover:text-pink-800 text-xs sm:text-sm disabled:opacity-50 bg-transparent p-0 min-w-0 h-auto hover:bg-transparent'
 //                           disabled={isSaving}
-//                         >
-//                           ×
-//                         </button>
+//                         />
 //                       </div>
 //                     ))}
 //                     {formData.interests.length === 0 && (
-//                       <p className='text-gray-500 text-sm'>
+//                       <p className='text-gray-500 text-xs sm:text-sm'>
 //                         No interests added yet
 //                       </p>
 //                     )}
 //                   </div>
 //                 </div>
 //               ) : (
-//                 <div className='flex flex-wrap gap-3'>
+//                 <div className='flex flex-wrap gap-2 sm:gap-3'>
 //                   {profileUser?.interests?.map(
 //                     (interest: string, index: number) => (
 //                       <span
 //                         key={index}
-//                         className='bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium shadow-sm'
+//                         className='bg-gradient-to-r from-pink-500 to-purple-600 text-white px-3 py-1 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium shadow-sm'
 //                       >
 //                         {interest}
 //                       </span>
@@ -693,17 +685,17 @@
 //                   )}
 //                   {(!profileUser?.interests ||
 //                     profileUser.interests.length === 0) && (
-//                     <div className='flex flex-wrap gap-3'>
-//                       <span className='bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium shadow-sm'>
+//                     <div className='flex flex-wrap gap-2 sm:gap-3'>
+//                       <span className='bg-gradient-to-r from-pink-500 to-purple-600 text-white px-3 py-1 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium shadow-sm'>
 //                         Art
 //                       </span>
-//                       <span className='bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium shadow-sm'>
+//                       <span className='bg-gradient-to-r from-pink-500 to-purple-600 text-white px-3 py-1 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium shadow-sm'>
 //                         Music
 //                       </span>
-//                       <span className='bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium shadow-sm'>
+//                       <span className='bg-gradient-to-r from-pink-500 to-purple-600 text-white px-3 py-1 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium shadow-sm'>
 //                         Travel
 //                       </span>
-//                       <span className='bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-2 rounded-full text-sm font-medium shadow-sm'>
+//                       <span className='bg-gradient-to-r from-pink-500 to-purple-600 text-white px-3 py-1 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium shadow-sm'>
 //                         Foodie
 //                       </span>
 //                     </div>
@@ -715,30 +707,33 @@
 //             {/* Save Changes Button */}
 //             {isEditing && (
 //               <div className='flex gap-4'>
-//                 <button
+//                 <Button
+//                   title={
+//                     isSaving ? (
+//                       <div className='flex items-center justify-center gap-2'>
+//                         <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-white'></div>
+//                         Saving...
+//                       </div>
+//                     ) : (
+//                       'Save Changes'
+//                     )
+//                   }
 //                   onClick={handleSubmit}
 //                   disabled={isSaving || loading}
-//                   className='bg-gradient-to-r from-pink-500 to-purple-600 text-white px-8 py-3 rounded-xl hover:from-pink-600 hover:to-purple-700 transition-all disabled:opacity-50 font-medium text-lg shadow-lg min-w-[140px]'
-//                 >
-//                   {isSaving ? (
-//                     <div className='flex items-center justify-center gap-2'>
-//                       <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-white'></div>
-//                       Saving...
-//                     </div>
-//                   ) : (
-//                     'Save Changes'
-//                   )}
-//                 </button>
+//                   btnStyle='bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 sm:px-8 py-3 rounded-xl hover:from-pink-600 hover:to-purple-700 transition-all disabled:opacity-50 font-medium text-base sm:text-lg shadow-lg min-w-[120px] sm:min-w-[140px]'
+//                 />
 //               </div>
 //             )}
 //           </div>
 //         </div>
 
 //         {/* Photos Section */}
-//         <div className='bg-black/50 rounded-3xl shadow-lg border border-gray-100 p-8'>
-//           <div className='flex justify-between items-center mb-6'>
-//             <h3 className='text-xl font-semibold text-gray-900'>Photos</h3>
-//             <label className='bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-3 rounded-xl hover:from-pink-600 hover:to-purple-700 transition-all cursor-pointer disabled:opacity-50 font-medium shadow-sm'>
+//         <div className='bg-white rounded-2xl sm:rounded-3xl shadow-lg border border-gray-100 p-4 sm:p-8'>
+//           <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6'>
+//             <h3 className='text-lg sm:text-xl font-semibold text-gray-900'>
+//               Photos
+//             </h3>
+//             <label className='bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl hover:from-pink-600 hover:to-purple-700 transition-all cursor-pointer disabled:opacity-50 font-medium shadow-sm text-sm sm:text-base text-center'>
 //               {loading ? 'Uploading...' : 'Upload Photos'}
 //               <input
 //                 type='file'
@@ -751,11 +746,11 @@
 //             </label>
 //           </div>
 
-//           <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4'>
+//           <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4'>
 //             {profileUser?.photos?.map((photo: string, index: number) => (
 //               <div key={index} className='relative group'>
 //                 <div
-//                   className='w-full h-32 rounded-xl overflow-hidden cursor-pointer shadow-md'
+//                   className='w-full h-24 sm:h-32 rounded-lg sm:rounded-xl overflow-hidden cursor-pointer shadow-md'
 //                   onClick={() => openGallery(index)}
 //                 >
 //                   <img
@@ -764,33 +759,39 @@
 //                     className='w-full h-full object-cover hover:scale-105 transition-transform duration-300'
 //                   />
 //                 </div>
-//                 <button
+//                 <Button
+//                   title='×'
 //                   onClick={(e) => {
 //                     e.stopPropagation()
 //                     handleDeletePhoto(index)
 //                   }}
 //                   disabled={loading || isSaving}
-//                   className='absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 shadow-md'
-//                   title='Delete photo'
-//                 >
-//                   ×
-//                 </button>
+//                   btnStyle='absolute top-1 right-1 sm:top-2 sm:right-2 bg-red-500 text-white rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50 shadow-md text-xs sm:text-base hover:bg-red-600 p-0 min-w-0'
+//                 />
 //               </div>
 //             ))}
 
 //             {(!profileUser?.photos || profileUser.photos.length === 0) && (
 //               <>
-//                 <div className='bg-gradient-to-br from-pink-100 to-purple-100 h-32 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 shadow-sm'>
-//                   <span className='text-gray-600 font-medium'>Hiking</span>
+//                 <div className='bg-gradient-to-br from-pink-100 to-purple-100 h-24 sm:h-32 rounded-lg sm:rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 shadow-sm'>
+//                   <span className='text-gray-600 text-xs sm:text-sm font-medium'>
+//                     Hiking
+//                   </span>
 //                 </div>
-//                 <div className='bg-gradient-to-br from-pink-100 to-purple-100 h-32 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 shadow-sm'>
-//                   <span className='text-gray-600 font-medium'>Photography</span>
+//                 <div className='bg-gradient-to-br from-pink-100 to-purple-100 h-24 sm:h-32 rounded-lg sm:rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 shadow-sm'>
+//                   <span className='text-gray-600 text-xs sm:text-sm font-medium'>
+//                     Photography
+//                   </span>
 //                 </div>
-//                 <div className='bg-gradient-to-br from-pink-100 to-purple-100 h-32 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 shadow-sm'>
-//                   <span className='text-gray-600 font-medium'>Travel</span>
+//                 <div className='bg-gradient-to-br from-pink-100 to-purple-100 h-24 sm:h-32 rounded-lg sm:rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 shadow-sm'>
+//                   <span className='text-gray-600 text-xs sm:text-sm font-medium'>
+//                     Travel
+//                   </span>
 //                 </div>
-//                 <div className='bg-gradient-to-br from-pink-100 to-purple-100 h-32 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 shadow-sm'>
-//                   <span className='text-gray-600 font-medium'>Food</span>
+//                 <div className='bg-gradient-to-br from-pink-100 to-purple-100 h-24 sm:h-32 rounded-lg sm:rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 shadow-sm'>
+//                   <span className='text-gray-600 text-xs sm:text-sm font-medium'>
+//                     Food
+//                   </span>
 //                 </div>
 //               </>
 //             )}
@@ -801,7 +802,7 @@
 //       {/* Professional Gallery Modal */}
 //       {selectedPhotoIndex !== null && profileUser?.photos && (
 //         <div
-//           className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 ${
+//           className={`fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 transition-all duration-300 ${
 //             isClosing ? 'bg-black bg-opacity-0' : 'bg-black bg-opacity-95'
 //           }`}
 //           onClick={closeGallery}
@@ -824,83 +825,86 @@
 //             {/* Navigation Arrows */}
 //             {profileUser.photos.length > 1 && (
 //               <>
-//                 <button
+//                 <Button
+//                   title={
+//                     <svg
+//                       className='w-4 h-4 sm:w-6 sm:h-6'
+//                       fill='none'
+//                       stroke='currentColor'
+//                       viewBox='0 0 24 24'
+//                     >
+//                       <path
+//                         strokeLinecap='round'
+//                         strokeLinejoin='round'
+//                         strokeWidth={2}
+//                         d='M15 19l-7-7 7-7'
+//                       />
+//                     </svg>
+//                   }
 //                   onClick={(e) => {
 //                     e.stopPropagation()
 //                     navigateGallery('prev')
 //                   }}
-//                   className='absolute left-4 bg-black/10 bg-opacity-20 hover:bg-opacity-30 text-white rounded-full w-12 h-12 flex items-center justify-center transition-all duration-200 backdrop-blur-sm border border-white border-opacity-20'
-//                 >
-//                   <svg
-//                     className='w-6 h-6'
-//                     fill='none'
-//                     stroke='currentColor'
-//                     viewBox='0 0 24 24'
-//                   >
-//                     <path
-//                       strokeLinecap='round'
-//                       strokeLinejoin='round'
-//                       strokeWidth={2}
-//                       d='M15 19l-7-7 7-7'
-//                     />
-//                   </svg>
-//                 </button>
-//                 <button
+//                   btnStyle='absolute left-2 sm:left-4 bg-black/50 bg-opacity-20 hover:bg-opacity-30 text-white rounded-full w-8 h-8 sm:w-12 sm:h-12 flex items-center justify-center transition-all duration-200 backdrop-blur-sm border border-white border-opacity-20 p-0 min-w-0'
+//                 />
+//                 <Button
+//                   title={
+//                     <svg
+//                       className='w-4 h-4 sm:w-6 sm:h-6'
+//                       fill='none'
+//                       stroke='currentColor'
+//                       viewBox='0 0 24 24'
+//                     >
+//                       <path
+//                         strokeLinecap='round'
+//                         strokeLinejoin='round'
+//                         strokeWidth={2}
+//                         d='M9 5l7 7-7 7'
+//                       />
+//                     </svg>
+//                   }
 //                   onClick={(e) => {
 //                     e.stopPropagation()
 //                     navigateGallery('next')
 //                   }}
-//                   className='absolute right-4 bg-black/10 bg-opacity-20 hover:bg-opacity-30 text-white rounded-full w-12 h-12 flex items-center justify-center transition-all duration-200 backdrop-blur-sm border border-white border-opacity-20'
-//                 >
-//                   <svg
-//                     className='w-6 h-6'
-//                     fill='none'
-//                     stroke='currentColor'
-//                     viewBox='0 0 24 24'
-//                   >
-//                     <path
-//                       strokeLinecap='round'
-//                       strokeLinejoin='round'
-//                       strokeWidth={2}
-//                       d='M9 5l7 7-7 7'
-//                     />
-//                   </svg>
-//                 </button>
+//                   btnStyle='absolute right-2 sm:right-4 bg-black/50 bg-opacity-20 hover:bg-opacity-30 text-white rounded-full w-8 h-8 sm:w-12 sm:h-12 flex items-center justify-center transition-all duration-200 backdrop-blur-sm border border-white border-opacity-20 p-0 min-w-0'
+//                 />
 //               </>
 //             )}
 
 //             {/* Close Button */}
-//             <button
+//             <Button
+//               title={
+//                 <svg
+//                   className='w-4 h-4 sm:w-5 sm:h-5'
+//                   fill='none'
+//                   stroke='currentColor'
+//                   viewBox='0 0 24 24'
+//                 >
+//                   <path
+//                     strokeLinecap='round'
+//                     strokeLinejoin='round'
+//                     strokeWidth={2}
+//                     d='M6 18L18 6M6 6l12 12'
+//                   />
+//                 </svg>
+//               }
 //               onClick={closeGallery}
-//               className='absolute top-4 right-4 bg-black/50 bg-opacity-20 hover:bg-opacity-30 text-white rounded-full w-10 h-10 flex items-center justify-center transition-all duration-200 backdrop-blur-sm border border-white border-opacity-20'
-//             >
-//               <svg
-//                 className='w-5 h-5'
-//                 fill='none'
-//                 stroke='currentColor'
-//                 viewBox='0 0 24 24'
-//               >
-//                 <path
-//                   strokeLinecap='round'
-//                   strokeLinejoin='round'
-//                   strokeWidth={2}
-//                   d='M6 18L18 6M6 6l12 12'
-//                 />
-//               </svg>
-//             </button>
+//               btnStyle='absolute top-2 sm:top-4 right-2 sm:right-4 bg-black/50 bg-opacity-20 hover:bg-opacity-30 text-white rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center transition-all duration-200 backdrop-blur-sm border border-white border-opacity-20 p-0 min-w-0'
+//             />
 
 //             {/* Image Counter */}
-//             <div className='absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 text-white px-4 py-2 rounded-full text-sm font-medium backdrop-blur-sm'>
+//             <div className='absolute bottom-2 sm:bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 text-white px-3 py-1 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium backdrop-blur-sm'>
 //               {selectedPhotoIndex + 1} / {profileUser.photos.length}
 //             </div>
 
 //             {/* Thumbnail Strip */}
-//             <div className='absolute bottom-4 left-4 right-4 flex justify-center'>
-//               <div className='flex gap-2 max-w-full overflow-x-auto py-2 px-4 bg-black/50 bg-opacity-30 rounded-2xl backdrop-blur-sm'>
+//             <div className='absolute bottom-2 sm:bottom-4 left-2 sm:left-4 right-2 sm:right-4 flex justify-center'>
+//               <div className='flex gap-1 sm:gap-2 max-w-full overflow-x-auto py-1 sm:py-2 px-2 sm:px-4 bg-black bg-opacity-30 rounded-xl sm:rounded-2xl backdrop-blur-sm'>
 //                 {profileUser.photos.map((photo, index) => (
 //                   <div
 //                     key={index}
-//                     className={`w-16 h-16 rounded-lg overflow-hidden cursor-pointer border-2 transition-all duration-200 ${
+//                     className={`w-10 h-10 sm:w-16 sm:h-16 rounded-lg overflow-hidden cursor-pointer border-2 transition-all duration-200 ${
 //                       index === selectedPhotoIndex
 //                         ? 'border-white border-opacity-80'
 //                         : 'border-transparent opacity-60 hover:opacity-100'
@@ -921,7 +925,25 @@
 //             </div>
 
 //             {/* Download Button */}
-//             <button
+//             <Button
+//               title={
+//                 <>
+//                   <svg
+//                     className='w-3 h-3 sm:w-4 sm:h-4'
+//                     fill='none'
+//                     stroke='currentColor'
+//                     viewBox='0 0 24 24'
+//                   >
+//                     <path
+//                       strokeLinecap='round'
+//                       strokeLinejoin='round'
+//                       strokeWidth={2}
+//                       d='M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
+//                     />
+//                   </svg>
+//                   Download
+//                 </>
+//               }
 //               onClick={(e) => {
 //                 e.stopPropagation()
 //                 const link = document.createElement('a')
@@ -929,36 +951,21 @@
 //                 link.download = `photo-${selectedPhotoIndex + 1}.jpg`
 //                 link.click()
 //               }}
-//               className='absolute top-4 left-4 bg-black/50 bg-opacity-20 hover:bg-opacity-30 text-white rounded-xl px-4 py-2 flex items-center gap-2 transition-all duration-200 backdrop-blur-sm border border-white border-opacity-20 text-sm font-medium'
-//             >
-//               <svg
-//                 className='w-4 h-4'
-//                 fill='none'
-//                 stroke='currentColor'
-//                 viewBox='0 0 24 24'
-//               >
-//                 <path
-//                   strokeLinecap='round'
-//                   strokeLinejoin='round'
-//                   strokeWidth={2}
-//                   d='M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
-//                 />
-//               </svg>
-//               Download
-//             </button>
+//               btnStyle='absolute top-2 sm:top-4 left-2 sm:left-4 bg-black/50 bg-opacity-20 hover:bg-opacity-30 text-white rounded-lg sm:rounded-xl px-2 sm:px-4 py-1 sm:py-2 flex items-center gap-1 sm:gap-2 transition-all duration-200 backdrop-blur-sm border border-white border-opacity-20 text-xs sm:text-sm font-medium'
+//             />
 //           </div>
 //         </div>
 //       )}
 
 //       {/* Success/Error Messages */}
 //       {message && (
-//         <div className='fixed top-4 right-4 bg-pink-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'>
+//         <div className='fixed top-2 sm:top-4 right-2 sm:right-4 bg-pink-500 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg shadow-lg z-50 max-w-xs sm:max-w-sm text-sm sm:text-base'>
 //           {message}
 //         </div>
 //       )}
 
 //       {error && (
-//         <div className='fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50'>
+//         <div className='fixed top-2 sm:top-4 right-2 sm:right-4 bg-red-500 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-lg shadow-lg z-50 max-w-xs sm:max-w-sm text-sm sm:text-base'>
 //           {error}
 //         </div>
 //       )}
@@ -969,9 +976,15 @@
 // export default ProfilePage
 
 'use client'
-import React, { useEffect, useState } from 'react'
+import React, {
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+  Suspense,
+} from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { RootState, AppDispatch } from '../../store/store'
 import {
   getProfileRequest,
@@ -982,7 +995,7 @@ import {
   clearError,
 } from '../../store/slices/profileSlice'
 import { checkAuthRequest } from '../../store/slices/authSlice'
-import Button from '../../components/Button' // Import your Button component
+import Button from '../../components/Button'
 
 interface ProfileFormData {
   name: string
@@ -1024,12 +1037,22 @@ const reverseGeocode = async (lat: number, lng: number): Promise<string> => {
   }
 }
 
-const ProfilePage: React.FC = () => {
+// Loading Screen Component
+const LoadingScreen = ({ message = 'Loading...' }: { message?: string }) => (
+  <div className='min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center'>
+    <div className='text-center'>
+      <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4'></div>
+      <p className='text-gray-600'>{message}</p>
+    </div>
+  </div>
+)
+
+// Profile Content Component (only shown when authenticated)
+const ProfileContent: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>()
   const router = useRouter()
-  const { user: authUser, checkingAuth } = useSelector(
-    (state: RootState) => state.auth
-  )
+
+  const { user: authUser } = useSelector((state: RootState) => state.auth)
   const {
     user: profileUser,
     loading,
@@ -1046,7 +1069,6 @@ const ProfilePage: React.FC = () => {
     location: '',
     gender: '',
   })
-  const [hasCheckedAuth, setHasCheckedAuth] = useState(false)
   const [currentInterest, setCurrentInterest] = useState('')
   const [isConvertingLocation, setIsConvertingLocation] = useState(false)
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(
@@ -1113,27 +1135,17 @@ const ProfilePage: React.FC = () => {
     router.push('/discovery')
   }
 
-  useEffect(() => {
-    if (!hasCheckedAuth) {
-      dispatch(checkAuthRequest())
-      setHasCheckedAuth(true)
-    }
-  }, [dispatch, hasCheckedAuth])
-
-  useEffect(() => {
-    if (!checkingAuth && !authUser && hasCheckedAuth) {
-      router.push('/login')
-    }
-  }, [checkingAuth, authUser, hasCheckedAuth, router])
-
   const userId = authUser?.id || authUser?._id
 
+  // Fetch profile when component mounts (only for authenticated users)
   useEffect(() => {
-    if (!checkingAuth && authUser && userId && !profileUser && !loading) {
+    if (authUser && userId && !profileUser && !loading) {
+      console.log('👤 Fetching profile for authenticated user:', authUser.email)
       dispatch(getProfileRequest())
     }
-  }, [authUser, userId, profileUser, loading, checkingAuth, dispatch])
+  }, [authUser, userId, profileUser, loading, dispatch])
 
+  // Initialize form data when profile is loaded
   useEffect(() => {
     if (profileUser) {
       console.log('✅ Profile loaded:', profileUser)
@@ -1382,26 +1394,9 @@ const ProfilePage: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [selectedPhotoIndex, profileUser?.photos])
 
-  if (checkingAuth) {
-    return (
-      <div className='flex justify-center items-center min-h-screen'>
-        <div className='text-center'>
-          <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4'></div>
-          <p>Checking authentication...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if ((loading && !profileUser) || (authUser && !profileUser)) {
-    return (
-      <div className='flex justify-center items-center min-h-screen'>
-        <div className='text-center'>
-          <div className='animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4'></div>
-          <p>Loading your profile...</p>
-        </div>
-      </div>
-    )
+  // Show loading while fetching profile
+  if (loading && !profileUser) {
+    return <LoadingScreen message='Loading your profile...' />
   }
 
   return (
@@ -1943,4 +1938,79 @@ const ProfilePage: React.FC = () => {
   )
 }
 
-export default ProfilePage
+// Main Profile Page Component with Auth Guard
+const ProfilePage: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>()
+  const router = useRouter()
+
+  const {
+    user: authUser,
+    loading: authLoading,
+    checkingAuth,
+    error: authError,
+  } = useSelector((state: RootState) => state.auth)
+
+  const [initialCheckDone, setInitialCheckDone] = useState(false)
+  const [authCheckCompleted, setAuthCheckCompleted] = useState(false)
+
+  // Check authentication ONCE when component mounts
+  useEffect(() => {
+    if (!initialCheckDone) {
+      console.log('🔐 ProfilePage: Initial auth check...')
+      dispatch(checkAuthRequest())
+      setInitialCheckDone(true)
+    }
+  }, [dispatch, initialCheckDone])
+
+  // Track when auth check is complete
+  useEffect(() => {
+    if (!checkingAuth && !authLoading) {
+      console.log('✅ Auth check completed:', {
+        checkingAuth,
+        authLoading,
+        authUser,
+        authError,
+      })
+      setAuthCheckCompleted(true)
+    }
+  }, [checkingAuth, authLoading, authUser, authError])
+
+  // Handle redirect after auth check is complete
+  useEffect(() => {
+    // Only redirect if auth check is complete and no user
+    if (authCheckCompleted && !authUser && !authLoading && !checkingAuth) {
+      console.log('❌ No authenticated user, redirecting to login...')
+      // Use replace to prevent back button issues
+      router.replace('/login')
+    }
+  }, [authCheckCompleted, authUser, authLoading, checkingAuth, router])
+
+  // Show loading while checking auth
+  if (checkingAuth || (authLoading && !authUser)) {
+    return <LoadingScreen message='Checking authentication...' />
+  }
+
+  // Show content only if authenticated
+  if (authUser) {
+    return <ProfileContent />
+  }
+
+  // If auth check is complete but no user, show redirect message
+  if (authCheckCompleted && !authUser) {
+    return <LoadingScreen message='Redirecting to login...' />
+  }
+
+  // Fallback - show loading
+  return <LoadingScreen message='Loading...' />
+}
+
+// Wrap in Suspense for useSearchParams (if needed)
+const ProfilePageWithSuspense: React.FC = () => {
+  return (
+    <Suspense fallback={<LoadingScreen message='Loading...' />}>
+      <ProfilePage />
+    </Suspense>
+  )
+}
+
+export default ProfilePageWithSuspense

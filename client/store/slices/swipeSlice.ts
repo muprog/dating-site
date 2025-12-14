@@ -107,6 +107,11 @@ const swipeSlice = createSlice({
     clearError: (state) => {
       state.error = null
     },
+    clearSwipe: (state) => {
+      state.loading = false
+      state.error = null
+      state.lastMatch = null
+    },
   },
 })
 
@@ -116,6 +121,7 @@ export const {
   createSwipeFailure,
   clearLastMatch,
   clearError,
+  clearSwipe,
 } = swipeSlice.actions
 
 export default swipeSlice.reducer

@@ -129,6 +129,11 @@ const profileSlice = createSlice({
       state.error = null
       state.message = null
     },
+    clearProfile: (state) => {
+      state.user = null
+      state.loading = false
+      state.error = null
+    },
   },
 })
 
@@ -148,6 +153,8 @@ export const {
   clearMessage,
   clearError,
   resetProfile,
+
+  clearProfile,
 } = profileSlice.actions
 
 export default profileSlice.reducer
