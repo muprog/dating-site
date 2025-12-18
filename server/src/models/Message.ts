@@ -1,15 +1,15 @@
-// models/Message.js
 const mongoose = require('mongoose')
+const { Schema } = mongoose
 
-const messageSchema = new mongoose.Schema(
+const messageSchema = new Schema(
   {
-    match: {
-      type: mongoose.Schema.Types.ObjectId,
+    matchId: {
+      type: Schema.Types.ObjectId,
       ref: 'Match',
       required: true,
     },
-    sender: {
-      type: mongoose.Schema.Types.ObjectId,
+    senderId: {
+      type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
     },
@@ -17,20 +17,21 @@ const messageSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
-      maxlength: 1000,
     },
-    read: {
+    isRead: {
       type: Boolean,
       default: false,
     },
-    readAt: Date,
+    readAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true,
   }
 )
 
-// Index for fetching messages by match
-messageSchema.index({ match: 1, createdAt: 1 })
+// Index for faster queries
+messageSchema.index({ matchId: 1, createdAt: -1 })
 
 module.exports = mongoose.model('Message', messageSchema)

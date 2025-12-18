@@ -16,6 +16,7 @@ import { profileSaga } from './profileSaga'
 import { discoverySaga } from './discoverySaga' // Import discovery saga
 import { swipeSaga } from './swipeSaga' // Import swipe saga
 import { matchSaga } from './matchSaga'
+import { messageSaga } from './messageSaga'
 export default function* rootSaga() {
   yield all([
     authSaga(),
@@ -23,5 +24,6 @@ export default function* rootSaga() {
     discoverySaga(), // Add discovery saga
     swipeSaga(), // Add swipe saga
     matchSaga(),
+    messageSaga(),
   ])
 }

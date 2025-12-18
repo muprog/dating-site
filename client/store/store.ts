@@ -34,7 +34,7 @@ import discoveryReducer from './slices/discoverySlice'
 import swipeReducer from './slices/swipeSlice'
 import rootSaga from './sagas/rootSaga'
 import matchReducer from './slices/matchSlice'
-
+import messageReducer from './slices/messageSlice'
 const sagaMiddleware = createSagaMiddleware()
 
 export const store = configureStore({
@@ -44,6 +44,7 @@ export const store = configureStore({
     discovery: discoveryReducer, // Added discovery slice
     swipe: swipeReducer, // Added swipe slice
     match: matchReducer,
+    messages: messageReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -53,11 +54,13 @@ export const store = configureStore({
           'profile/uploadPhotosRequest',
           'discovery/getRecommendations/pending', // Add discovery actions if needed
           'swipe/createSwipe/pending', // Add swipe actions if needed
+          'messages/newMessageReceived',
         ],
         ignoredPaths: [
           'profile.uploadPhotosRequest.payload',
           'discovery.recommendedUsers', // Add discovery paths if needed
           'swipe.lastMatch', // Add swipe paths if needed
+          'messages.messages',
         ],
       },
     }).concat(sagaMiddleware),

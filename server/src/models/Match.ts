@@ -49,6 +49,19 @@ const matchSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    lastMessage: {
+      type: String,
+      default: null,
+    },
+    lastMessageAt: {
+      type: Date,
+      default: null,
+    },
+    unreadCounts: {
+      type: Map,
+      of: Number,
+      default: {},
+    },
     active: {
       type: Boolean,
       default: true,
