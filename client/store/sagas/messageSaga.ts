@@ -15,34 +15,33 @@ import { messageApi } from '../services/messageApi'
 import { Match, Message } from '../../types/messaging'
 
 // Worker Saga: Get matches
+// sagas/messageSaga.ts - Update handleGetMatches
 function* handleGetMatches(): SagaIterator {
-  try {
-    console.log('🔄 Message Saga: Fetching matches...')
+  console.log('🔄 [handleGetMatches] Saga starting...')
 
-    const response: { success: boolean; matches: Match[] } = yield call(
-      messageApi.getMatches
-    )
+  try {
+    const response = yield call(messageApi.getMatches)
+
+    console.log('✅ [handleGetMatches] Got response:', {
+      success: response.success,
+      matchesCount: response.matches?.length,
+    })
 
     if (response.success) {
-      console.log('✅ Message Saga: Matches fetched successfully')
+      console.log(
+        `✅ [handleGetMatches] Dispatching ${response.matches.length} matches`
+      )
       yield put(getMatchesSuccess(response.matches))
     } else {
-      throw new Error('Failed to fetch matches')
+      // Even if not successful, dispatch empty matches to avoid UI errors
+      console.log('⚠️ [handleGetMatches] No matches found or error occurred')
+      yield put(getMatchesSuccess([]))
     }
   } catch (error: any) {
-    console.error('❌ Message Saga: Failed to get matches:', error)
+    console.error('❌ [handleGetMatches] Error:', error.message)
 
-    let errorMessage = 'Failed to load conversations'
-
-    if (error.response?.status === 401) {
-      errorMessage = 'Please login again'
-    } else if (error.response?.data?.message) {
-      errorMessage = error.response.data.message
-    } else if (error.message) {
-      errorMessage = error.message
-    }
-
-    yield put(getMatchesFailure(errorMessage))
+    // Dispatch empty matches on error
+    yield put(getMatchesSuccess([]))
   }
 }
 

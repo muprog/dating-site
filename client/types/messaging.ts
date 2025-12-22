@@ -14,15 +14,25 @@ export interface Match {
   lastMessageAt?: string
   unreadCount: number
   createdAt: string
+  users: any
 }
 
+// types/messaging.ts
 export interface Message {
   _id: string
   matchId: string
-  senderId: User
+  sender: string // This is the string ID
+  senderId: {
+    _id: string
+    name: string
+    photos: string[]
+    age?: number
+  }
   content: string
-  isRead: boolean
   createdAt: string
+  updatedAt: string
+  isRead: boolean
+  read?: boolean
 }
 
 export interface MessageState {
