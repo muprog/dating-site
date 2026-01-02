@@ -798,7 +798,6 @@ router.get('/recommendations', auth, async (req: any, res: any) => {
 
     console.log('🔄 Getting mixed feed recommendations for:', currentUser.name)
 
-    // Get all necessary data in parallel for efficiency
     const [
       newUsers,
       popularUsers,
@@ -813,7 +812,6 @@ router.get('/recommendations', auth, async (req: any, res: any) => {
       getRecycledUsers(currentUser),
     ])
 
-    // Mix all sources with limits
     const mixedFeed = mixFeedSources(
       newUsers,
       popularUsers,
@@ -844,7 +842,6 @@ router.get('/recommendations', auth, async (req: any, res: any) => {
   }
 })
 
-// 1. 🆕 New Users - Joined in last 7 days
 async function getNewUsers(currentUser: any): Promise<any[]> {
   const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
 
@@ -864,7 +861,6 @@ async function getNewUsers(currentUser: any): Promise<any[]> {
   }))
 }
 
-// 2. 🔥 Popular Users - Most liked users
 async function getPopularUsers(currentUser: any): Promise<any[]> {
   const popularUserIds = await Swipe.aggregate([
     {
@@ -904,7 +900,6 @@ async function getPopularUsers(currentUser: any): Promise<any[]> {
   }))
 }
 
-// 3. ⚡ Online Recently - Active in last 24 hours
 async function getOnlineUsers(currentUser: any): Promise<any[]> {
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
 
@@ -924,7 +919,6 @@ async function getOnlineUsers(currentUser: any): Promise<any[]> {
   }))
 }
 
-// 4. 🎯 High Compatibility - MODIFIED: Don't exclude swiped users
 async function getHighCompatibilityUsers(
   currentUser: any,
   latitude: string,
@@ -936,14 +930,6 @@ async function getHighCompatibilityUsers(
     verified: true,
     ...getBasePreferences(currentUser),
   }
-
-  // REMOVED: Get users that current user hasn't swiped on
-  // const swipedUsers = await Swipe.find({
-  //   swiper: currentUser._id,
-  // }).select('swiped')
-  //
-  // const swipedUserIds = swipedUsers.map((swipe: any) => swipe.swiped)
-  // baseQuery._id.$nin = swipedUserIds
 
   let users: any[] = []
 

@@ -21,7 +21,6 @@ const MessagesPage: React.FC = () => {
   const router = useRouter()
   const dispatch = useDispatch<AppDispatch>()
 
-  // Get data from Redux store
   const { matches, currentMatch, messages, loading, error } = useSelector(
     (state: RootState) => state.messages
   )

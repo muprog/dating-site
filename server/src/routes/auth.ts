@@ -21,20 +21,47 @@ const transporter = nodemailer.createTransport({
 router.post('/logout', auth, async (req, res) => {
   try {
     // Clear JWT token cookie
-    res.clearCookie('token', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/',
-    })
+    // res.clearCookie('token', {
+    //   httpOnly: true,
+    //   secure: process.env.NODE_ENV === 'production',
+    //   sameSite: 'strict',
+    //   path: '/',
+    // })
 
     // ALSO clear the session cookie
-    res.clearCookie('connect.sid', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/',
+    const allKnownCookies = [
+      // Authentication
+      'token',
+      'connect.sid',
+
+      // Analytics/Tracking
+      'rl_page_init_referrer',
+      'rl_page_init_referring_domain',
+      'rl_anonymous_id',
+      'rl_user_id',
+      'rl_trait',
+      'rl_session',
+      'ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog',
+
+      // Add any other cookies your app uses
+      // 'remember_me',
+      // 'user_preferences',
+      // etc...
+    ]
+    allKnownCookies.forEach((cookieName) => {
+      res.clearCookie(cookieName, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        path: '/',
+      })
     })
+    // res.clearCookie('connect.sid', {
+    //   httpOnly: true,
+    //   secure: process.env.NODE_ENV === 'production',
+    //   sameSite: 'strict',
+    //   path: '/',
+    // })
 
     // Clear session if using express-session
     if (req.session) {
