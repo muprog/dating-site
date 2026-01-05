@@ -56,11 +56,11 @@ const passport = require('./config/passport')
 import session = require('express-session')
 const path = require('path')
 const app = express()
-const server = http.createServer(app)
-const setupWebSocket = require('./server/websocket')
-const io = setupWebSocket(server)
 
-app.set('io', io)
+// const setupWebSocket = require('./server/websocket')
+// const io = setupWebSocket(server)
+
+// app.set('io', io)
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'keyboard cat',
@@ -82,7 +82,10 @@ app.use(
 app.use(express.json())
 app.use(cookieParser())
 app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')))
-
+const server = http.createServer(app)
+const setupWebSocket = require('./server/websocket')
+const io = setupWebSocket(server)
+app.set('io', io)
 //
 const authRoutes = require('./routes/auth')
 app.use('/api/auth', authRoutes)

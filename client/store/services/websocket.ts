@@ -515,7 +515,6 @@
 // }
 
 // export const webSocketService = new WebSocketService()
-
 import { io, Socket } from 'socket.io-client'
 import { Message } from '../../types/messaging'
 import { store } from '../store'
@@ -524,7 +523,7 @@ import { newMessageReceived } from '../slices/messageSlice'
 class WebSocketService {
   private socket: Socket | null = null
   private reconnectAttempts = 0
-  private maxReconnectAttempts = 5
+  private maxReconnectAttempts = 10
   private connectionPromise: Promise<void> | null = null
   private messageQueue: Array<{ matchId: string; content: string }> = []
   private isConnecting = false
@@ -560,6 +559,7 @@ class WebSocketService {
 
   async connect(): Promise<void> {
     if (this.socket?.connected) {
+      console.log('🔌 WebSocket already connected')
       return Promise.resolve()
     }
 
@@ -569,71 +569,106 @@ class WebSocketService {
     }
 
     this.isConnecting = true
-    this.connectionPromise = new Promise((resolve) => {
+    this.connectionPromise = new Promise((resolve, reject) => {
       const token = this.getToken()
 
-      if (!token) {
-        this.isConnecting = false
-        this.connectionPromise = null
-        resolve() // Resolve instead of reject
-        return
-      }
+      console.log('🔌 Connecting WebSocket...', {
+        hasToken: !!token,
+        tokenLength: token?.length,
+      })
 
+      // Use the same URL as your API
       const wsUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'
+      console.log('🔌 Connecting to:', wsUrl)
 
       const socketOptions: any = {
-        auth: { token },
-        transports: ['websocket', 'polling'],
+        auth: { token: token || '' },
+        transports: ['polling', 'websocket'], // Polling first, then upgrade to websocket
         reconnection: true,
         reconnectionAttempts: this.maxReconnectAttempts,
-        reconnectionDelay: 2000,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        timeout: 20000,
+        forceNew: true,
         withCredentials: true,
-        timeout: 8000,
+        query: token ? { token } : {},
       }
 
       try {
+        console.log('🔌 Creating socket with options:', socketOptions)
         this.socket = io(wsUrl, socketOptions)
-      } catch {
+      } catch (error) {
+        console.error('❌ Failed to create socket:', error)
         this.isConnecting = false
         this.connectionPromise = null
-        resolve() // Resolve instead of reject
+        resolve()
         return
       }
 
-      const timeout = setTimeout(() => {
-        if (!this.socket?.connected) {
-          this.isConnecting = false
-          this.connectionPromise = null
-          resolve()
-        }
-      }, 8000)
+      const connectionTimeout = setTimeout(() => {
+        console.warn('⚠️ WebSocket connection timeout')
+        this.isConnecting = false
+        this.connectionPromise = null
+        resolve()
+      }, 15000)
 
       this.socket.on('connect', () => {
-        clearTimeout(timeout)
+        clearTimeout(connectionTimeout)
         this.isConnecting = false
         this.reconnectAttempts = 0
+        console.log('✅ WebSocket connected successfully!', {
+          socketId: this.socket?.id,
+          connected: this.socket?.connected,
+          transport: this.socket?.io.engine.transport.name,
+        })
 
         // Process queued messages
         this.processMessageQueue()
 
+        // Re-join current match if exists
         const state = store.getState()
         const currentMatch = state.messages.currentMatch
         if (currentMatch) {
+          console.log(`🚪 Re-joining match room: ${currentMatch._id}`)
           this.joinMatch(currentMatch._id)
         }
 
         resolve()
       })
 
-      this.socket.on('connect_error', () => {
-        clearTimeout(timeout)
+      this.socket.on('connect_error', (error) => {
+        console.error('❌ WebSocket connection error:', error.message)
+
+        // Don't clear timeout here, let it continue trying
         this.reconnectAttempts++
 
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+          clearTimeout(connectionTimeout)
+          console.warn('⚠️ Max reconnection attempts reached')
           this.isConnecting = false
           this.connectionPromise = null
           resolve()
         }
+      })
+
+      this.socket.on('disconnect', (reason) => {
+        console.log('🔌 WebSocket disconnected:', reason)
+        if (reason === 'io server disconnect') {
+          // Server disconnected, try to reconnect
+          this.socket?.connect()
+        }
+      })
+
+      this.socket.on('welcome', (data) => {
+        console.log('👋 WebSocket welcome:', data)
+      })
+
+      this.socket.on('joined-room', (data) => {
+        console.log('🚪 Joined room:', data)
+      })
+
+      this.socket.on('message-sent', (data) => {
+        console.log('✅ Message sent confirmation:', data)
       })
 
       this.setupEventListeners()
@@ -645,19 +680,25 @@ class WebSocketService {
   private setupEventListeners() {
     if (!this.socket) return
 
-    this.socket.on('disconnect', () => {
-      this.isConnecting = false
-      this.connectionPromise = null
-    })
-
     this.socket.on('new-message', (message: Message) => {
+      console.log('📩 WebSocket: Received new-message event:', {
+        messageId: message._id,
+        matchId: message.matchId,
+        sender: message.sender,
+        content: message.content.substring(0, 50) + '...',
+      })
+
+      // Dispatch to Redux
       store.dispatch(newMessageReceived(message))
+
+      // Notify callbacks
       this.onNewMessageCallbacks.forEach((callback) => callback(message))
     })
 
     this.socket.on(
       'user-typing',
       (data: { matchId: string; userId: string }) => {
+        console.log('⌨️ WebSocket: User typing:', data)
         this.onUserTypingCallbacks.forEach((callback) => callback(data))
       }
     )
@@ -665,13 +706,26 @@ class WebSocketService {
     this.socket.on(
       'user-stopped-typing',
       (data: { matchId: string; userId: string }) => {
+        console.log('💤 WebSocket: User stopped typing:', data)
         this.onUserStoppedTypingCallbacks.forEach((callback) => callback(data))
       }
     )
+
+    // Debug: Log all events
+    this.socket.onAny((event, ...args) => {
+      if (event !== 'pong' && event !== 'ping') {
+        // Filter out ping/pong noise
+        console.log(
+          `🔵 [WebSocket Event] ${event}`,
+          args.length > 0 ? args[0] : ''
+        )
+      }
+    })
   }
 
   private processMessageQueue() {
     if (this.messageQueue.length > 0) {
+      console.log(`📤 Processing ${this.messageQueue.length} queued messages`)
       const queueCopy = [...this.messageQueue]
       this.messageQueue = []
 
@@ -683,7 +737,12 @@ class WebSocketService {
 
   private sendMessageInternal(matchId: string, content: string) {
     if (this.socket?.connected) {
+      console.log(`📤 Sending WebSocket message to match ${matchId}`)
       this.socket.emit('send-message', { matchId, content })
+    } else {
+      console.warn('⚠️ Cannot send WebSocket message: socket not connected')
+      // Queue for later
+      this.messageQueue.push({ matchId, content })
     }
   }
 
@@ -716,27 +775,36 @@ class WebSocketService {
 
   joinMatch(matchId: string) {
     if (this.socket?.connected) {
+      console.log(`🚪 Joining match room via WebSocket: ${matchId}`)
       this.socket.emit('join-match', matchId)
+    } else {
+      console.warn('⚠️ Cannot join match: socket not connected')
+      // Try to connect first
+      this.connect().then(() => {
+        if (this.socket?.connected) {
+          this.socket.emit('join-match', matchId)
+        }
+      })
     }
   }
 
   leaveMatch(matchId: string) {
     if (this.socket?.connected) {
+      console.log(`🚪 Leaving match room via WebSocket: ${matchId}`)
       this.socket.emit('leave-match', matchId)
     }
   }
 
   async sendMessage(matchId: string, content: string): Promise<void> {
-    // If not connected, queue the message
-    if (!this.isConnected()) {
-      this.messageQueue.push({ matchId, content })
+    console.log(`📤 Sending WebSocket message for match ${matchId}`)
 
-      // Try to connect in the background
-      this.connect()
-      return
+    // Ensure we're connected
+    if (!this.isConnected()) {
+      console.log('⚠️ WebSocket not connected, trying to connect...')
+      await this.connect()
     }
 
-    // We're connected, send immediately
+    // Send immediately
     this.sendMessageInternal(matchId, content)
   }
 
@@ -754,6 +822,7 @@ class WebSocketService {
 
   disconnect() {
     if (this.socket) {
+      console.log('🔌 Disconnecting WebSocket...')
       this.socket.disconnect()
       this.socket = null
       this.isConnecting = false

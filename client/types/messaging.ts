@@ -33,6 +33,7 @@ export interface Message {
   updatedAt: string
   isRead: boolean
   read?: boolean
+  isOptimistic?: boolean
 }
 
 export interface MessageState {
