@@ -1,244 +1,33 @@
-// const socketIO = require('socket.io')
-// const jwt = require('jsonwebtoken')
-// const cookie = require('cookie') // Add this import
-
-// function setupWebSocket(server: any) {
-//   const io = socketIO(server, {
-//     cors: {
-//       origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-//       credentials: true,
-//     },
-//     transports: ['websocket', 'polling'],
-//   })
-
-//   const onlineUsers = new Map()
-
-//   // Add authentication middleware
-//   io.use(async (socket: any, next: any) => {
-//     try {
-//       console.log('🔐 WebSocket authentication attempt')
-
-//       // Try to get token from auth object first
-//       let token = socket.handshake.auth.token
-
-//       // If no token in auth, try to get from cookies
-//       if (!token) {
-//         const cookies = socket.handshake.headers.cookie
-//         if (cookies) {
-//           const parsedCookies = cookie.parse(cookies)
-//           token = parsedCookies.token
-//         }
-//       }
-
-//       if (!token) {
-//         console.log('❌ WebSocket: No token found')
-//         return next(new Error('Authentication required'))
-//       }
-
-//       // Verify token
-//       const decoded = jwt.verify(
-//         token,
-//         process.env.JWT_SECRET || 'your-secret-key'
-//       )
-
-//       console.log(
-//         `✅ WebSocket: User authenticated - ${decoded.id || decoded.userId}`
-//       )
-
-//       // Store user info on socket
-//       socket.userId = decoded.id || decoded.userId
-//       socket.user = decoded
-
-//       next()
-//     } catch (error: any) {
-//       console.error('❌ WebSocket authentication failed:', error.message)
-//       next(new Error('Authentication failed'))
-//     }
-//   })
-
-//   io.on('connection', (socket: any) => {
-//     console.log(
-//       '✅ New WebSocket connection:',
-//       socket.id,
-//       'User:',
-//       socket.userId
-//     )
-
-//     // Store user connection
-//     if (socket.userId) {
-//       onlineUsers.set(socket.userId, socket.id)
-//       console.log(`✅ User ${socket.userId} is now online`)
-//     }
-
-//     // Join match room
-//     socket.on('join-match', (matchId: any) => {
-//       if (!matchId) {
-//         console.error('❌ join-match: No matchId provided')
-//         return
-//       }
-//       socket.join(`match-${matchId}`)
-//       console.log(`🚪 User ${socket.userId} joined match-${matchId}`)
-//     })
-
-//     // Leave match room
-//     socket.on('leave-match', (matchId: any) => {
-//       if (!matchId) {
-//         console.error('❌ leave-match: No matchId provided')
-//         return
-//       }
-//       socket.leave(`match-${matchId}`)
-//       console.log(`🚪 User ${socket.userId} left match-${matchId}`)
-//     })
-
-//     // Send message
-//     // socket.on('send-message', (data: any) => {
-//     //   const { matchId, content } = data
-//     //   if (!matchId || !content) {
-//     //     console.error('❌ send-message: Missing matchId or content')
-//     //     return
-//     //   }
-//     //   console.log(
-//     //     `💬 User ${socket.userId} sending message to match ${matchId}`
-//     //   )
-
-//     //   // Broadcast to everyone in the match room except sender
-//     //   socket.to(`match-${matchId}`).emit('new-message', {
-//     //     matchId,
-//     //     sender: socket.userId,
-//     //     senderId: {
-//     //       _id: socket.userId,
-//     //       name: socket.user?.name || 'User',
-//     //     },
-//     //     content,
-//     //     createdAt: new Date().toISOString(),
-//     //     isRead: false,
-//     //   })
-//     // })
-//     // In the send-message event handler in backend websocket.js
-//     socket.on('send-message', (data: any) => {
-//       const { matchId, content } = data
-//       if (!matchId || !content) {
-//         console.error('❌ send-message: Missing matchId or content')
-//         return
-//       }
-
-//       console.log(
-//         `💬 User ${socket.userId} sending message to match ${matchId}`
-//       )
-
-//       // Create a complete message object
-//       const messageData = {
-//         _id: `socket-${Date.now()}`,
-//         matchId,
-//         sender: socket.userId,
-//         senderId: {
-//           _id: socket.userId,
-//           name: socket.user?.name || 'User',
-//           photos: socket.user?.photos || [],
-//         },
-//         content,
-//         createdAt: new Date().toISOString(),
-//         updatedAt: new Date().toISOString(),
-//         isRead: false,
-//       }
-
-//       // Broadcast to everyone in the match room EXCEPT sender
-//       // (Sender already added their message via Redux)
-//       socket.to(`match-${matchId}`).emit('new-message', messageData)
-//       console.log('📤 WebSocket message sent to other users:', messageData)
-//     })
-
-//     // Handle typing indicator
-//     socket.on('typing', (matchId: any) => {
-//       if (!matchId) {
-//         console.error('❌ typing: No matchId provided')
-//         return
-//       }
-//       console.log(`⌨️ User ${socket.userId} typing in match ${matchId}`)
-//       socket.to(`match-${matchId}`).emit('user-typing', {
-//         matchId,
-//         userId: socket.userId,
-//       })
-//     })
-
-//     socket.on('stop-typing', (matchId: any) => {
-//       if (!matchId) {
-//         console.error('❌ stop-typing: No matchId provided')
-//         return
-//       }
-//       console.log(`💤 User ${socket.userId} stopped typing in match ${matchId}`)
-//       socket.to(`match-${matchId}`).emit('user-stopped-typing', {
-//         matchId,
-//         userId: socket.userId,
-//       })
-//     })
-
-//     // Handle disconnect
-//     socket.on('disconnect', () => {
-//       if (socket.userId) {
-//         console.log(`❌ User ${socket.userId} disconnected`)
-//         onlineUsers.delete(socket.userId)
-//       }
-//     })
-
-//     // Error handling
-//     socket.on('error', (error: any) => {
-//       console.error('❌ Socket error:', error)
-//     })
-//   })
-
-//   return io
-// }
-
-// module.exports = setupWebSocket
-
 const socketIO = require('socket.io')
 const jwt = require('jsonwebtoken')
+const Message = require('../models/Message')
+const Match = require('../models/Match')
+const User = require('../models/User')
 
 function setupWebSocket(server: any) {
+  console.log('🚀 Initializing WebSocket server...')
+
   const io = socketIO(server, {
     cors: {
-      origin: function (origin: any, callback: any) {
-        // Allow all origins in development, restrict in production
-        if (!origin || process.env.NODE_ENV !== 'production') {
-          return callback(null, true)
-        }
-
-        const allowedOrigins = [
-          process.env.FRONTEND_URL || 'http://localhost:3000',
-          'http://localhost:3000',
-        ]
-
-        if (allowedOrigins.indexOf(origin) !== -1) {
-          callback(null, true)
-        } else {
-          callback(new Error('Not allowed by CORS'))
-        }
-      },
+      origin: process.env.FRONTEND_URL || 'http://localhost:3000',
       credentials: true,
       methods: ['GET', 'POST'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
     },
     transports: ['websocket', 'polling'],
+    allowUpgrades: true,
     pingTimeout: 60000,
     pingInterval: 25000,
   })
 
-  console.log('✅ WebSocket server initialized')
+  console.log('✅ WebSocket server created')
 
-  // Add authentication middleware
+  // Authentication middleware
   io.use(async (socket: any, next: any) => {
     try {
-      console.log('🔐 WebSocket authentication attempt')
+      let token = socket.handshake.auth.token || socket.handshake.query.token
 
-      // Get token from handshake query
-      let token = socket.handshake.query.token
-
-      // If no token in query, try auth object
-      if (!token) {
-        token = socket.handshake.auth.token
-      }
-
-      // If still no token, try cookies
+      // Check cookies
       if (!token && socket.handshake.headers.cookie) {
         const cookies = socket.handshake.headers.cookie.split(';')
         const tokenCookie = cookies.find((c: any) =>
@@ -250,10 +39,7 @@ function setupWebSocket(server: any) {
       }
 
       if (!token) {
-        console.log(
-          '⚠️ WebSocket: No token found, allowing connection for debugging'
-        )
-        // Allow connection but mark as unauthenticated
+        console.log('⚠️ No token found, allowing anonymous connection')
         socket.userId = 'anonymous'
         return next()
       }
@@ -263,164 +49,180 @@ function setupWebSocket(server: any) {
         token,
         process.env.JWT_SECRET || 'your-secret-key'
       )
+      console.log('✅ Token verified for user:', decoded.id)
 
-      console.log(
-        `✅ WebSocket: User authenticated - ${decoded.id || decoded.userId}`
-      )
+      // Get user from database
+      const user = await User.findById(decoded.id).select('name photos age')
+      if (!user) {
+        throw new Error('User not found')
+      }
 
-      // Store user info on socket
-      socket.userId = decoded.id || decoded.userId
-      socket.user = decoded
-
+      socket.userId = decoded.id
+      socket.user = user
       next()
     } catch (error: any) {
-      console.error('❌ WebSocket authentication failed:', error.message)
-
-      // Allow connection even if authentication fails (for debugging)
-      console.log('⚠️ Allowing connection despite auth failure for debugging')
+      console.error('❌ WebSocket auth error:', error.message)
       socket.userId = 'unauthenticated'
       next()
     }
   })
 
   io.on('connection', (socket: any) => {
-    console.log(
-      '✅ New WebSocket connection:',
-      socket.id,
-      'User:',
-      socket.userId || 'unknown'
-    )
+    console.log('🎉 New WebSocket connection:', {
+      socketId: socket.id,
+      userId: socket.userId,
+      userName: socket.user?.name,
+    })
 
-    // Send welcome message
+    // Welcome message
     socket.emit('welcome', {
       message: 'Connected to WebSocket server',
       socketId: socket.id,
       userId: socket.userId,
+      timestamp: new Date().toISOString(),
     })
 
-    // Debug: Listen for all events
-    socket.onAny((event: any, ...args: any) => {
-      console.log(
-        `🔵 [Socket ${socket.id}] Event: ${event}`,
-        args.length > 0 ? args[0] : ''
-      )
-    })
-
-    // Join match room
+    // Handle match room joining
     socket.on('join-match', (matchId: any) => {
       if (!matchId) {
         console.error('❌ join-match: No matchId provided')
         return
       }
+
       const roomName = `match-${matchId}`
       socket.join(roomName)
-      console.log(
-        `🚪 User ${socket.userId || socket.id} joined room: ${roomName}`
-      )
+      console.log(`🚪 User ${socket.userId} joined room: ${roomName}`)
 
-      // Send confirmation
-      socket.emit('joined-room', { room: roomName })
+      socket.emit('joined-room', {
+        room: roomName,
+        matchId: matchId,
+        timestamp: new Date().toISOString(),
+      })
     })
 
-    // Leave match room
+    // Handle match room leaving
     socket.on('leave-match', (matchId: any) => {
       if (!matchId) {
         console.error('❌ leave-match: No matchId provided')
         return
       }
+
       const roomName = `match-${matchId}`
       socket.leave(roomName)
-      console.log(
-        `🚪 User ${socket.userId || socket.id} left room: ${roomName}`
-      )
+      console.log(`🚪 User ${socket.userId} left room: ${roomName}`)
     })
 
-    // Send message via WebSocket
-    socket.on('send-message', (data: any) => {
+    // Handle sending messages - UPDATED TO SAVE TO DATABASE
+    socket.on('send-message', async (data: any) => {
       const { matchId, content } = data
+
       if (!matchId || !content) {
         console.error('❌ send-message: Missing matchId or content')
+        socket.emit('message-error', { error: 'Missing data' })
         return
       }
 
       console.log(
-        `💬 WebSocket: User ${
-          socket.userId || socket.id
-        } sending message to match ${matchId}`
+        `💬 User ${socket.userId} sending to ${matchId}:`,
+        content.substring(0, 50)
       )
 
-      // Create a complete message object
-      const messageData = {
-        _id: `ws-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        matchId,
-        sender: socket.userId || 'unknown',
-        senderId: {
-          _id: socket.userId || 'unknown',
-          name: socket.user?.name || 'User',
-        },
-        content,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        isRead: false,
+      try {
+        // 1. Verify user has access to this match
+        const match = await Match.findOne({
+          _id: matchId,
+          users: socket.userId,
+          active: true,
+        }).populate('users', 'name photos age')
+
+        if (!match) {
+          throw new Error('Access denied or match not found')
+        }
+
+        // 2. Create and save message to database
+        const message = new Message({
+          matchId,
+          senderId: socket.userId,
+          content: content.trim(),
+        })
+
+        await message.save()
+
+        // 3. Populate message with sender info
+        const populatedMessage = await Message.findById(message._id)
+          .populate('senderId', 'name photos age')
+          .lean()
+
+        // 4. Transform message for frontend
+        const messageData = {
+          _id: populatedMessage._id.toString(),
+          matchId: populatedMessage.matchId.toString(),
+          sender: populatedMessage.senderId._id.toString(),
+          senderId: {
+            _id: populatedMessage.senderId._id.toString(),
+            name: populatedMessage.senderId.name || 'Unknown',
+            photos: populatedMessage.senderId.photos || [],
+            age: populatedMessage.senderId.age,
+          },
+          content: populatedMessage.content,
+          createdAt: populatedMessage.createdAt.toISOString(),
+          updatedAt: populatedMessage.updatedAt.toISOString(),
+          isRead: false,
+        }
+
+        // 5. Update match with last message
+        match.lastMessage = content.trim()
+        match.lastMessageAt = new Date()
+
+        // 6. Increment unread count for the other user
+        const otherUser = match.users.find(
+          (user: any) => user._id.toString() !== socket.userId.toString()
+        )
+
+        if (otherUser && match.unreadCounts) {
+          const otherUserId = otherUser._id.toString()
+          if (typeof match.unreadCounts.get === 'function') {
+            const currentUnread = match.unreadCounts.get(otherUserId) || 0
+            match.unreadCounts.set(otherUserId, currentUnread + 1)
+          } else {
+            match.unreadCounts[otherUserId] =
+              (match.unreadCounts[otherUserId] || 0) + 1
+          }
+        }
+
+        await match.save()
+
+        // 7. Broadcast to match room
+        const roomName = `match-${matchId}`
+        io.to(roomName).emit('new-message', messageData)
+        console.log(`📤 Message saved and broadcasted to ${roomName}`)
+
+        // 8. Send confirmation to sender
+        socket.emit('message-sent', {
+          success: true,
+          message: messageData,
+          timestamp: new Date().toISOString(),
+        })
+      } catch (error: any) {
+        console.error('❌ Error sending message via WebSocket:', error)
+        socket.emit('message-error', {
+          error: error.message || 'Failed to send message',
+        })
       }
-
-      const roomName = `match-${matchId}`
-
-      // Broadcast to everyone in the match room EXCEPT sender
-      socket.to(roomName).emit('new-message', messageData)
-      console.log(`📤 Message broadcasted to room ${roomName}`)
-
-      // Send confirmation to sender
-      socket.emit('message-sent', {
-        success: true,
-        messageId: messageData._id,
-      })
     })
 
-    // Handle typing indicator
-    socket.on('typing', (matchId: any) => {
-      if (!matchId) {
-        console.error('❌ typing: No matchId provided')
-        return
-      }
-      console.log(
-        `⌨️ User ${socket.userId || socket.id} typing in match ${matchId}`
-      )
-      socket.to(`match-${matchId}`).emit('user-typing', {
-        matchId,
-        userId: socket.userId || socket.id,
-      })
-    })
-
-    socket.on('stop-typing', (matchId: any) => {
-      if (!matchId) {
-        console.error('❌ stop-typing: No matchId provided')
-        return
-      }
-      console.log(
-        `💤 User ${
-          socket.userId || socket.id
-        } stopped typing in match ${matchId}`
-      )
-      socket.to(`match-${matchId}`).emit('user-stopped-typing', {
-        matchId,
-        userId: socket.userId || socket.id,
-      })
-    })
-
-    // Handle disconnect
+    // Handle disconnection
     socket.on('disconnect', (reason: any) => {
-      console.log(
-        `❌ User ${socket.userId || socket.id} disconnected: ${reason}`
-      )
+      console.log(`❌ User ${socket.userId} disconnected:`, reason)
     })
 
-    // Error handling
+    // Handle errors
     socket.on('error', (error: any) => {
-      console.error('❌ Socket error:', error)
+      console.error(`❌ Socket error:`, error)
     })
   })
 
+  console.log('✅ WebSocket server fully initialized')
   return io
 }
 
