@@ -5,6 +5,9 @@ export interface User {
   photos: string[]
   location?: string
   bio?: string
+  online?: boolean
+  lastSeen?: string
+  lastActive?: string
 }
 
 export interface Match {
@@ -34,6 +37,7 @@ export interface Message {
   isRead: boolean
   read?: boolean
   isOptimistic?: boolean
+  tempId?: string
 }
 
 export interface MessageState {
@@ -45,4 +49,20 @@ export interface MessageState {
   hasMore: boolean
   page: number
   limit: number
+  typingIndicators: Array<{
+    userId: string
+    matchId: string
+    isTyping: boolean
+    name?: string
+    user?: User
+    timestamp: string
+  }>
+  onlineStatus: Record<
+    string,
+    {
+      isOnline: boolean
+      lastSeen?: string
+      user?: User
+    }
+  >
 }

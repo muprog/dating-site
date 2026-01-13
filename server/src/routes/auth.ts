@@ -20,14 +20,6 @@ const transporter = nodemailer.createTransport({
 
 router.post('/logout', auth, async (req, res) => {
   try {
-    // Clear JWT token cookie
-    // res.clearCookie('token', {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === 'production',
-    //   sameSite: 'strict',
-    //   path: '/',
-    // })
-
     // ALSO clear the session cookie
     const allKnownCookies = [
       // Authentication
