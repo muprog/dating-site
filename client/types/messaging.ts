@@ -65,4 +65,6 @@ export interface MessageState {
       user?: User
     }
   >
+  totalUnread: number // Add this
+  loadingUnread: boolean
 }

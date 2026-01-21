@@ -379,4 +379,200 @@ router.post('/mark-read/:matchId', async (req: any, res: any) => {
   }
 })
 
+router.put('/:messageId/edit', authMiddleware, async (req: any, res: any) => {
+  try {
+    const { messageId } = req.params
+    const { matchId, content } = req.body
+    const userId = req.user.id
+
+    console.log(`✏️ API: Editing message ${messageId} by user ${userId}`)
+
+    // Validate input
+    if (!content || !content.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Message content is required',
+      })
+    }
+
+    if (content.length > 1000) {
+      return res.status(400).json({
+        success: false,
+        error: 'Message is too long (max 1000 characters)',
+      })
+    }
+
+    if (!matchId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Match ID is required',
+      })
+    }
+
+    // Find the message
+    const message = await Message.findById(messageId)
+
+    if (!message) {
+      return res.status(404).json({
+        success: false,
+        error: 'Message not found',
+      })
+    }
+
+    // Check if user owns the message
+    if (message.senderId.toString() !== userId) {
+      return res.status(403).json({
+        success: false,
+        error: 'You can only edit your own messages',
+      })
+    }
+
+    // Check if message belongs to the specified match
+    if (message.matchId.toString() !== matchId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Message does not belong to this match',
+      })
+    }
+
+    // Check if message is too old to edit (15 minutes limit)
+    const messageAge = Date.now() - message.createdAt.getTime()
+    const editTimeLimit = 15 * 60 * 1000 // 15 minutes in milliseconds
+
+    if (messageAge > editTimeLimit) {
+      return res.status(400).json({
+        success: false,
+        error: 'Message is too old to edit',
+      })
+    }
+
+    // Save old content for audit (optional)
+    const oldContent = message.content
+
+    // Update the message
+    message.content = content.trim()
+    message.updatedAt = Date.now()
+    message.isEdited = true
+
+    await message.save()
+
+    // Populate sender info
+    await message.populate('senderId', 'name photos age')
+
+    // Update match last message if this was the last message
+    const lastMessage = await Message.findOne({
+      matchId: matchId,
+    }).sort({ createdAt: -1 })
+
+    if (lastMessage && lastMessage._id.toString() === messageId) {
+      await Match.findByIdAndUpdate(matchId, {
+        lastMessage: content.trim(),
+        lastMessageAt: new Date(),
+      })
+    }
+
+    // Emit WebSocket event if using WebSocket
+    if (req.app.get('io')) {
+      const io = req.app.get('io')
+      io.to(`match-${matchId}`).emit('message-edited', {
+        messageId: message._id,
+        matchId,
+        content: message.content,
+        updatedAt: message.updatedAt,
+        isEdited: true,
+        sender: {
+          _id: message.senderId._id,
+          name: message.senderId.name,
+        },
+      })
+    }
+
+    res.json({
+      success: true,
+      message: {
+        _id: message._id,
+        matchId: message.matchId,
+        sender: message.senderId._id,
+        senderId: {
+          _id: message.senderId._id,
+          name: message.senderId.name,
+          photos: message.senderId.photos || [],
+          age: message.senderId.age,
+        },
+        content: message.content,
+        createdAt: message.createdAt,
+        updatedAt: message.updatedAt,
+        isRead: message.isRead,
+        isEdited: true,
+      },
+      updatedAt: message.updatedAt,
+    })
+
+    console.log(`✅ API: Message ${messageId} edited successfully`)
+  } catch (error) {
+    console.error('❌ API Error editing message:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Server error while editing message',
+    })
+  }
+})
+
+// routes/messages.js - Add this endpoint
+router.get('/unread/total', authMiddleware, async (req: any, res: any) => {
+  try {
+    const userId = req.user.id
+    console.log(`🔔 Fetching total unread messages for user: ${userId}`)
+
+    // Get all matches for the user
+    const matches = await Match.find({
+      users: userId,
+      active: true,
+    })
+
+    // Calculate total unread messages across all matches
+    let totalUnread = 0
+    const matchesWithUnread = []
+
+    for (const match of matches) {
+      let unread = 0
+
+      if (match.unreadCounts) {
+        if (typeof match.unreadCounts.get === 'function') {
+          // It's a Map
+          unread = match.unreadCounts.get(userId) || 0
+        } else {
+          // It's a plain object
+          unread = match.unreadCounts[userId] || 0
+        }
+      }
+
+      if (unread > 0) {
+        totalUnread += unread
+        matchesWithUnread.push({
+          matchId: match._id,
+          unreadCount: unread,
+        })
+      }
+    }
+
+    console.log(
+      `✅ Total unread messages: ${totalUnread} across ${matchesWithUnread.length} matches`
+    )
+
+    res.json({
+      success: true,
+      totalUnread,
+      matchesWithUnread,
+      matchesWithUnreadCount: matchesWithUnread.length,
+    })
+  } catch (error: any) {
+    console.error('❌ Error fetching unread total:', error)
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Server error',
+    })
+  }
+})
+
 module.exports = router

@@ -428,6 +428,7 @@ function setupWebSocket(server: any) {
           userId: socket.userId,
           timestamp: new Date().toISOString(),
         })
+        await emitUnreadUpdate(io, socket.userId)
 
         // Send list of online users
         const onlineUsers = Array.from(connectedUsers.keys())
@@ -569,6 +570,55 @@ function setupWebSocket(server: any) {
       }
     })
 
+    const emitUnreadUpdate = async (io: any, userId: any) => {
+      try {
+        // Get matches for the user
+        const matches = await Match.find({
+          users: userId,
+          active: true,
+        })
+
+        // Calculate total unread
+        let totalUnread = 0
+        const matchesWithUnread = []
+
+        for (const match of matches) {
+          let unread = 0
+
+          if (match.unreadCounts) {
+            if (typeof match.unreadCounts.get === 'function') {
+              // It's a Map
+              unread = match.unreadCounts.get(userId) || 0
+            } else {
+              // It's a plain object
+              unread = match.unreadCounts[userId] || 0
+            }
+          }
+
+          if (unread > 0) {
+            totalUnread += unread
+            matchesWithUnread.push({
+              matchId: match._id.toString(),
+              unreadCount: unread,
+            })
+          }
+        }
+
+        // Find the user's socket
+        const userData = connectedUsers.get(userId)
+        if (userData) {
+          // Emit to the specific user
+          io.to(userData.socketId).emit('unread-update', {
+            totalUnread,
+            matchesWithUnread,
+            matchesWithUnreadCount: matchesWithUnread.length,
+            timestamp: new Date().toISOString(),
+          })
+        }
+      } catch (error) {
+        console.error('❌ Error emitting unread update:', error)
+      }
+    }
     // Send message
     socket.on('send-message', async (data: any) => {
       const { matchId, content, tempId } = data
@@ -632,6 +682,7 @@ function setupWebSocket(server: any) {
         if (otherUser) {
           const currentCount = match.unreadCounts.get(otherUser.toString()) || 0
           match.unreadCounts.set(otherUser.toString(), currentCount + 1)
+          await emitUnreadUpdate(io, otherUser.toString())
         }
 
         await match.save()
@@ -708,7 +759,7 @@ function setupWebSocket(server: any) {
         await Match.findByIdAndUpdate(matchId, {
           $set: { [`unreadCounts.${socket.userId}`]: 0 },
         })
-
+        await emitUnreadUpdate(io, socket.userId)
         // Broadcast read receipt
         socket.to(`match-${matchId}`).emit('messages-read', {
           matchId,
@@ -764,6 +815,109 @@ function setupWebSocket(server: any) {
       if (userData) {
         userData.lastActivity = new Date()
       }
+    })
+
+    // Add this handler for message editing
+    socket.on('edit-message', async (data: any) => {
+      const { messageId, matchId, content } = data
+
+      if (!messageId || !matchId || !content || content.trim().length === 0) {
+        socket.emit('edit-message-error', {
+          error: 'Invalid edit data',
+          messageId,
+        })
+        return
+      }
+
+      console.log(`✏️ ${socket.user.name} editing message ${messageId}`)
+
+      try {
+        // Verify user owns the message
+        const message = await Message.findById(messageId)
+        if (!message) {
+          throw new Error('Message not found')
+        }
+
+        if (message.senderId.toString() !== socket.userId) {
+          throw new Error('You can only edit your own messages')
+        }
+
+        // Check if message is too old to edit (15 minutes limit)
+        const messageAge = Date.now() - message.createdAt.getTime()
+        const editTimeLimit = 15 * 60 * 1000 // 15 minutes
+
+        if (messageAge > editTimeLimit) {
+          throw new Error('Message is too old to edit')
+        }
+
+        // Update message content
+        const oldContent = message.content
+        message.content = content.trim()
+        message.updatedAt = new Date()
+        message.isEdited = true
+
+        await message.save()
+
+        // Populate sender info
+        await message.populate('senderId', 'name photos age')
+
+        // Prepare edited message data
+        const editedMessageData = {
+          messageId: message._id.toString(),
+          matchId: message.matchId.toString(),
+          content: message.content,
+          updatedAt: message.updatedAt.toISOString(),
+          isEdited: true,
+          sender: {
+            _id: message.senderId._id.toString(),
+            name: message.senderId.name,
+          },
+          oldContent: oldContent, // Optional: include old content for undo feature
+        }
+
+        // Broadcast to match room
+        const roomName = `match-${matchId}`
+        io.to(roomName).emit('message-edited', editedMessageData)
+
+        // Update match last message if this was the last message
+        const lastMessage = await Message.findOne({
+          matchId: matchId,
+        }).sort({ createdAt: -1 })
+
+        if (lastMessage && lastMessage._id.toString() === messageId) {
+          await Match.findByIdAndUpdate(matchId, {
+            lastMessage: content.trim(),
+            lastMessageAt: new Date(),
+          })
+        }
+
+        console.log(`✅ Message ${messageId} edited successfully`)
+
+        // Send confirmation to sender
+        socket.emit('edit-message-success', {
+          success: true,
+          messageId,
+          matchId,
+          content: message.content,
+          updatedAt: message.updatedAt,
+        })
+      } catch (error: any) {
+        console.error('❌ Error editing message:', error)
+        socket.emit('edit-message-error', {
+          error: error.message || 'Failed to edit message',
+          messageId,
+        })
+      }
+    })
+
+    // Add error event for message editing
+    socket.on('edit-message-error', (error: any) => {
+      console.error('❌ Edit message error:', error)
+    })
+
+    // Add success event for message editing
+    socket.on('edit-message-success', (data: any) => {
+      console.log('✅ Edit message success:', data)
     })
 
     // Handle disconnection

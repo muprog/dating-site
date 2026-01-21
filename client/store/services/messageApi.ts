@@ -205,4 +205,49 @@ export const messageApi = {
       return { success: false }
     }
   },
+  editMessage: async (
+    messageId: string,
+    matchId: string,
+    content: string
+  ): Promise<{ success: boolean; message?: Message; updatedAt?: string }> => {
+    try {
+      const response = await api.put(`/messages/${messageId}/edit`, {
+        matchId,
+        content,
+      })
+
+      return response.data
+    } catch (error: any) {
+      console.error(
+        `❌ [messageApi] Error editing message ${messageId}:`,
+        error
+      )
+
+      // Return a consistent error response
+      return {
+        success: false,
+        message: undefined,
+        updatedAt: undefined,
+      }
+    }
+  },
+  getUnreadTotal: async (): Promise<{
+    success: boolean
+    totalUnread: number
+    matchesWithUnread: Array<{ matchId: string; unreadCount: number }>
+    matchesWithUnreadCount: number
+  }> => {
+    try {
+      const response = await api.get('/messages/unread/total')
+      return response.data
+    } catch (error) {
+      console.error('❌ Error fetching unread total:', error)
+      return {
+        success: false,
+        totalUnread: 0,
+        matchesWithUnread: [],
+        matchesWithUnreadCount: 0,
+      }
+    }
+  },
 }

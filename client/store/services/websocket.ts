@@ -1501,8 +1501,11 @@ import {
   setOnlineStatus,
   setOnlineStatusBatch,
   replaceOptimisticMessage,
+  editMessageSuccess,
+  getUnreadTotalSuccess,
+  incrementTotalUnread,
+  decrementTotalUnread,
 } from '../slices/messageSlice'
-
 class WebSocketService {
   private socket: Socket | null = null
   private listeners: Map<string, Function[]> = new Map()
@@ -1600,7 +1603,27 @@ class WebSocketService {
 
   private setupSocketListeners() {
     if (!this.socket) return
+    this.socket.on('unread-update', (data: any) => {
+      console.log('📊 WebSocket: Received unread update:', data)
 
+      // Update total unread count in Redux
+      store.dispatch(
+        getUnreadTotalSuccess({
+          totalUnread: data.totalUnread || 0,
+          matchesWithUnread: data.matchesWithUnread || [],
+        })
+      )
+
+      // Also increment/decrement as needed based on action
+      if (data.action === 'increment') {
+        store.dispatch(incrementTotalUnread())
+      } else if (data.action === 'decrement' && data.count) {
+        store.dispatch(decrementTotalUnread(data.count))
+      }
+
+      this.triggerEvent('unread-update', data)
+    })
+    this.socket.on('message-edited', this.messageEditedHandler)
     // Listen for new messages
     this.socket.on('new-message', (message: any) => {
       console.log('📩 WebSocket: Received new message:', {
@@ -1827,6 +1850,7 @@ class WebSocketService {
           // Clean up listeners
           this.socket?.off('message-sent', onMessageSent)
           this.socket?.off('message-error', onMessageError)
+          webSocketService.off('message-edited', this.messageEditedHandler)
         }
 
         const onMessageError = (error: any) => {
@@ -1835,10 +1859,12 @@ class WebSocketService {
           // Clean up listeners
           this.socket?.off('message-sent', onMessageSent)
           this.socket?.off('message-error', onMessageError)
+          webSocketService.off('message-edited', this.messageEditedHandler)
         }
 
         this.socket?.on('message-sent', onMessageSent)
         this.socket?.on('message-error', onMessageError)
+        webSocketService.off('message-edited', this.messageEditedHandler)
 
         // Timeout after 5 seconds
         setTimeout(() => {
@@ -1943,6 +1969,54 @@ class WebSocketService {
 
   getSocket(): Socket | null {
     return this.socket
+  }
+
+  sendMessageEdit(
+    messageId: string,
+    matchId: string,
+    content: string
+  ): boolean {
+    if (!this.socket?.connected) {
+      console.log('⚠️ WebSocket not connected, cannot edit message')
+      return false
+    }
+
+    try {
+      console.log(
+        `✏️ Sending message edit: messageId=${messageId}, matchId=${matchId}`
+      )
+
+      this.socket.emit('edit-message', {
+        messageId,
+        matchId,
+        content,
+      })
+      return true
+    } catch (error) {
+      console.error('❌ Error sending message edit:', error)
+      return false
+    }
+  }
+
+  // Add this event listener setup
+  messageEditedHandler = (data: any) => {
+    console.log('✏️ WebSocket: Message edited:', {
+      messageId: data.messageId,
+      matchId: data.matchId,
+      content: data.content,
+    })
+
+    // You need to import editMessageSuccess from your slice
+    store.dispatch(
+      editMessageSuccess({
+        messageId: data.messageId,
+        matchId: data.matchId,
+        content: data.content,
+        updatedAt: data.updatedAt,
+      })
+    )
+
+    this.triggerEvent('message-edited', data)
   }
 
   disconnect() {

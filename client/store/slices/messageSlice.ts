@@ -402,6 +402,8 @@ const initialState: MessageState = {
   limit: 50,
   typingIndicators: [],
   onlineStatus: {},
+  totalUnread: 0, // Add this
+  loadingUnread: false,
 }
 
 const messageSlice = createSlice({
@@ -842,11 +844,113 @@ const messageSlice = createSlice({
         return match
       })
     },
+    editMessageRequest: (
+      state,
+      action: PayloadAction<{
+        messageId: string
+        matchId: string
+        content: string
+      }>
+    ) => {
+      state.loading = true
+      state.error = null
+    },
+
+    editMessageSuccess: (
+      state,
+      action: PayloadAction<{
+        messageId: string
+        matchId: string
+        content: string
+        updatedAt: string
+      }>
+    ) => {
+      state.loading = false
+      const { messageId, matchId, content, updatedAt } = action.payload
+
+      // Update the message in messages array
+      state.messages = state.messages.map((msg) => {
+        if (msg._id === messageId) {
+          return {
+            ...msg,
+            content,
+            updatedAt,
+            isEdited: true,
+          }
+        }
+        return msg
+      })
+
+      // Update last message in matches list if this was the last message
+      const matchIndex = state.matches.findIndex((m) => m._id === matchId)
+      if (matchIndex !== -1) {
+        const lastMessage = state.messages
+          .filter((msg) => msg.matchId === matchId)
+          .sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          )[0]
+
+        if (lastMessage && lastMessage._id === messageId) {
+          state.matches[matchIndex].lastMessage = content
+        }
+      }
+    },
+
+    editMessageFailure: (state, action: PayloadAction<string>) => {
+      state.loading = false
+      state.error = action.payload
+    },
+    // Unread count reducers
+    getUnreadTotalRequest: (state) => {
+      state.loadingUnread = true
+      state.error = null
+    },
+
+    getUnreadTotalSuccess: (
+      state,
+      action: PayloadAction<{
+        totalUnread: number
+        matchesWithUnread: Array<{ matchId: string; unreadCount: number }>
+      }>
+    ) => {
+      state.loadingUnread = false
+      state.totalUnread = action.payload.totalUnread
+
+      // Also update individual match unread counts
+      action.payload.matchesWithUnread.forEach(({ matchId, unreadCount }) => {
+        const matchIndex = state.matches.findIndex((m) => m._id === matchId)
+        if (matchIndex !== -1) {
+          state.matches[matchIndex].unreadCount = unreadCount
+        }
+      })
+    },
+
+    getUnreadTotalFailure: (state, action: PayloadAction<string>) => {
+      state.loadingUnread = false
+      state.error = action.payload
+    },
+
+    incrementTotalUnread: (state) => {
+      state.totalUnread += 1
+    },
+
+    decrementTotalUnread: (state, action: PayloadAction<number>) => {
+      state.totalUnread = Math.max(0, state.totalUnread - action.payload)
+    },
+
+    resetTotalUnread: (state) => {
+      state.totalUnread = 0
+    },
 
     clearError: (state) => {
       state.error = null
     },
-
+    clearMessages: (state) => {
+      state.messages = []
+      state.loading = false
+      state.error = null
+    },
     // Clear loading states
     clearLoading: (state) => {
       state.loading = false
@@ -878,6 +982,16 @@ export const {
   clearLoading,
   markMessageAsRead,
   markMessagesReadSuccess,
+  editMessageRequest,
+  editMessageSuccess,
+  editMessageFailure,
+  clearMessages,
+  getUnreadTotalRequest,
+  getUnreadTotalSuccess,
+  getUnreadTotalFailure,
+  incrementTotalUnread,
+  decrementTotalUnread,
+  resetTotalUnread,
 } = messageSlice.actions
 
 export default messageSlice.reducer
