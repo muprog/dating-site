@@ -373,15 +373,14 @@
 // export default messageSlice.reducer
 
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { MessageState, Match, Message } from '../../types/messaging'
+import { MessageState, Match, Message, User } from '../../types/messaging'
 
 interface OnlineStatus {
   userId: string
   isOnline: boolean
   lastSeen?: string
-  user?: any
+  user?: User
 }
-
 interface TypingIndicator {
   userId: string
   matchId: string
@@ -820,24 +819,98 @@ const messageSlice = createSlice({
       })
     },
 
+    // setOnlineStatusBatch: (
+    //   state,
+    //   action: PayloadAction<Record<string, OnlineStatus[]>>
+    // ) => {
+    //   state.onlineStatus = { ...state.onlineStatus, ...action.payload }
+
+    //   // Update match user online status
+    //   state.matches = state.matches.map((match) => {
+    //     const otherUserId = match.otherUser?._id
+    //     if (otherUserId && action.payload[otherUserId]) {
+    //       return {
+    //         ...match,
+    //         otherUser: {
+    //           ...match.otherUser,
+    //           online: action.payload[otherUserId].isOnline,
+    //           lastSeen: action.payload[otherUserId].lastSeen,
+    //         },
+    //       }
+    //     }
+    //     return match
+    //   })
+    // },
+    // In your messageSlice.ts
+    // setOnlineStatusBatch: (state, action: PayloadAction<OnlineStatus[]>) => {
+    //   // Convert array to object with userId as key
+    //   const statusMap = action.payload.reduce((acc, status) => {
+    //     acc[status.userId] = status
+    //     return acc
+    //   }, {} as Record<string, OnlineStatus>)
+
+    //   state.onlineStatus = { ...state.onlineStatus, ...statusMap }
+
+    //   // Update match user online status
+    //   state.matches = state.matches.map((match) => {
+    //     const otherUserId = match.otherUser?._id
+    //     if (otherUserId && statusMap[otherUserId]) {
+    //       return {
+    //         ...match,
+    //         otherUser: {
+    //           ...match.otherUser,
+    //           online: statusMap[otherUserId].isOnline,
+    //           lastSeen: statusMap[otherUserId].lastSeen,
+    //         },
+    //       }
+    //     }
+    //     return match
+    //   })
+    // },
+    // In messageSlice.ts
     setOnlineStatusBatch: (
       state,
-      action: PayloadAction<
-        Record<string, { isOnline: boolean; lastSeen?: string; user?: any }>
-      >
+      action: PayloadAction<OnlineStatus[] | Record<string, OnlineStatus>>
     ) => {
-      state.onlineStatus = { ...state.onlineStatus, ...action.payload }
+      let statusMap: Record<string, OnlineStatus>
+
+      // Check if payload is an object with userIds as keys (from websocket)
+      if (!Array.isArray(action.payload)) {
+        // Convert object to array first, then to map
+        statusMap = Object.entries(action.payload).reduce(
+          (acc, [userId, status]) => {
+            if (status && typeof status === 'object') {
+              acc[userId] = {
+                userId,
+                isOnline: status.isOnline,
+                lastSeen: status.lastSeen,
+                user: status.user,
+              }
+            }
+            return acc
+          },
+          {} as Record<string, OnlineStatus>
+        )
+      } else {
+        // Payload is already an array
+        statusMap = action.payload.reduce((acc, status) => {
+          acc[status.userId] = status
+          return acc
+        }, {} as Record<string, OnlineStatus>)
+      }
+
+      state.onlineStatus = { ...state.onlineStatus, ...statusMap }
 
       // Update match user online status
       state.matches = state.matches.map((match) => {
         const otherUserId = match.otherUser?._id
-        if (otherUserId && action.payload[otherUserId]) {
+        if (otherUserId && statusMap[otherUserId]) {
           return {
             ...match,
             otherUser: {
               ...match.otherUser,
-              online: action.payload[otherUserId].isOnline,
-              lastSeen: action.payload[otherUserId].lastSeen,
+              online: statusMap[otherUserId].isOnline,
+              lastSeen: statusMap[otherUserId].lastSeen,
             },
           }
         }

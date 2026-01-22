@@ -345,6 +345,7 @@ import { RootState, AppDispatch } from '../../store/store'
 import { checkAuthRequest } from '../../store/slices/authSlice'
 import { getMatchesRequest } from '../../store/slices/matchSlice'
 import Button from '../../components/Button'
+import Image from 'next/image'
 
 interface Match {
   _id: string
@@ -399,7 +400,7 @@ const MatchesPage: React.FC = () => {
     setSelectedMatch(null)
   }
 
-  const handleSendMessage = (userId: string) => {
+  const handleSendMessage = () => {
     router.push(`/message`)
   }
 
@@ -509,9 +510,13 @@ const MatchesPage: React.FC = () => {
     </div>
   )
 }
-
+interface MatchCardProps {
+  match: Match
+  onViewProfile: (match: Match) => void
+  onSendMessage: (userId: string) => void
+}
 // Enhanced Match Card Component
-const MatchCard = ({ match, onViewProfile, onSendMessage }: any) => {
+const MatchCard = ({ match, onViewProfile, onSendMessage }: MatchCardProps) => {
   const [imageLoaded, setImageLoaded] = useState(false)
 
   return (
@@ -524,9 +529,10 @@ const MatchCard = ({ match, onViewProfile, onSendMessage }: any) => {
               {!imageLoaded && (
                 <div className='absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse' />
               )}
-              <img
+              <Image
                 src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${match.user.photos[0]}`}
                 alt={match.user.name}
+                fill
                 className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ${
                   imageLoaded ? 'opacity-100' : 'opacity-0'
                 }`}
@@ -550,7 +556,7 @@ const MatchCard = ({ match, onViewProfile, onSendMessage }: any) => {
           <div className='absolute top-4 right-4'>
             <div className='relative'>
               <div className='absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full blur animate-pulse'></div>
-              <div className='relative bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5'>
+              <div className='relative bg-gradient-to-r  bg-pink-600 text-white px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5'>
                 <span className='text-xs'>💖</span>
                 <span className='tracking-wide'>MATCH</span>
               </div>
@@ -585,7 +591,7 @@ const MatchCard = ({ match, onViewProfile, onSendMessage }: any) => {
 
           {match.user.bio && (
             <p className='text-gray-600 text-sm line-clamp-2 mb-4 flex-grow italic'>
-              "{match.user.bio}"
+              &quot;{match.user.bio}&quot;
             </p>
           )}
 
@@ -608,7 +614,7 @@ const MatchCard = ({ match, onViewProfile, onSendMessage }: any) => {
                 </div>
               }
               onClick={() => onSendMessage(match.user._id)}
-              btnStyle='flex-1 bg-gradient-to-r  bg-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 py-2.5 rounded-xl transition-all duration-300 hover:shadow-lg text-sm font-medium'
+              btnStyle='flex-1 bg-gradient-to-r  bg-pink-600  hover:bg-pink-700 text-white px-4 py-2.5 rounded-xl transition-all duration-300 hover:shadow-lg text-sm font-medium'
             />
           </div>
         </div>
@@ -616,13 +622,21 @@ const MatchCard = ({ match, onViewProfile, onSendMessage }: any) => {
     </div>
   )
 }
-
+interface MatchProfileModalProps {
+  match: Match
+  onClose: () => void
+  onSendMessage: (userId: string) => void
+}
 // Enhanced Profile Modal
-const MatchProfileModal = ({ match, onClose, onSendMessage }: any) => (
+const MatchProfileModal = ({
+  match,
+  onClose,
+  onSendMessage,
+}: MatchProfileModalProps) => (
   <div className='fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4'>
     <div className='bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl'>
       {/* Header */}
-      <div className='sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 rounded-t-2xl'>
+      <div className='sticky top-0  bg-pink-600 text-white p-6 rounded-t-2xl'>
         <div className='flex justify-between items-center'>
           <div>
             <h2 className='text-2xl font-bold'>Match Profile</h2>
@@ -642,9 +656,10 @@ const MatchProfileModal = ({ match, onClose, onSendMessage }: any) => (
         {/* Photo */}
         <div className='relative h-72 rounded-xl overflow-hidden mb-6 bg-gradient-to-br from-gray-900 to-gray-700'>
           {match.user.photos && match.user.photos.length > 0 ? (
-            <img
+            <Image
               src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${match.user.photos[0]}`}
               alt={match.user.name}
+              fill
               className='w-full h-full object-cover'
               onError={(e) => {
                 ;(e.target as HTMLImageElement).src =
@@ -727,7 +742,7 @@ const MatchProfileModal = ({ match, onClose, onSendMessage }: any) => (
               </div>
             }
             onClick={() => onSendMessage(match.user._id)}
-            btnStyle='flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 py-3 rounded-xl transition-all duration-300 hover:shadow-lg font-medium'
+            btnStyle='flex-1 bg-pink-600  hover:bg-pink-700 text-white px-4 py-3 rounded-xl transition-all duration-300 hover:shadow-lg font-medium'
           />
         </div>
       </div>
@@ -797,9 +812,12 @@ const LoadingScreen = ({ message = 'Loading...' }) => (
     </div>
   </div>
 )
-
+interface ErrorScreenProps {
+  error: string
+  onRetry: () => void
+}
 // Enhanced Error Screen
-const ErrorScreen = ({ error, onRetry }: any) => (
+const ErrorScreen = ({ error, onRetry }: ErrorScreenProps) => (
   <div className='min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 via-pink-50 to-white'>
     <div className='text-center bg-white rounded-3xl p-8 shadow-2xl max-w-md mx-4'>
       <div className='w-20 h-20 bg-gradient-to-r from-red-400 to-pink-400 rounded-full flex items-center justify-center mx-auto mb-6'>
@@ -835,26 +853,26 @@ const ErrorScreen = ({ error, onRetry }: any) => (
   </div>
 )
 
-// Add CSS for animations
-const extraStyles = `
-@keyframes blob {
-  0% { transform: translate(0px, 0px) scale(1); }
-  33% { transform: translate(30px, -50px) scale(1.1); }
-  66% { transform: translate(-20px, 20px) scale(0.9); }
-  100% { transform: translate(0px, 0px) scale(1); }
-}
+// // Add CSS for animations
+// const extraStyles = `
+// @keyframes blob {
+//   0% { transform: translate(0px, 0px) scale(1); }
+//   33% { transform: translate(30px, -50px) scale(1.1); }
+//   66% { transform: translate(-20px, 20px) scale(0.9); }
+//   100% { transform: translate(0px, 0px) scale(1); }
+// }
 
-.animation-delay-2000 {
-  animation-delay: 2s;
-}
+// .animation-delay-2000 {
+//   animation-delay: 2s;
+// }
 
-.group:hover .group-hover\\:scale-110 {
-  transform: scale(1.1);
-}
+// .group:hover .group-hover\\:scale-110 {
+//   transform: scale(1.1);
+// }
 
-.group:hover .group-hover\\:-translate-y-2 {
-  transform: translateY(-0.5rem);
-}
-`
+// .group:hover .group-hover\\:-translate-y-2 {
+//   transform: translateY(-0.5rem);
+// }
+// `
 
 export default MatchesPage

@@ -979,12 +979,12 @@
 import React, {
   useEffect,
   useState,
-  useMemo,
-  useCallback,
+  // useMemo,
+  // useCallback,
   Suspense,
 } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { RootState, AppDispatch } from '../../store/store'
 import {
   getProfileRequest,
@@ -994,16 +994,27 @@ import {
   clearMessage,
   clearError,
 } from '../../store/slices/profileSlice'
+import { useCallback } from 'react'
 import { checkAuthRequest } from '../../store/slices/authSlice'
 import Button from '../../components/Button'
-
+import Image from 'next/image'
+interface updatedDataPros {
+  name: string
+  bio: string
+  interests: string[]
+  location: string
+  gender?: 'male' | 'female' | 'other' | undefined
+  latitude?: number
+  longitude?: number
+  age?: number
+}
 interface ProfileFormData {
   name: string
   age: string
   bio: string
   interests: string[]
   location: string
-  gender: string
+  gender: 'male' | 'female' | 'other' | undefined
 }
 
 // Reverse geocoding function
@@ -1067,7 +1078,7 @@ const ProfileContent: React.FC = () => {
     bio: '',
     interests: [],
     location: '',
-    gender: '',
+    gender: undefined,
   })
   const [currentInterest, setCurrentInterest] = useState('')
   const [isConvertingLocation, setIsConvertingLocation] = useState(false)
@@ -1155,7 +1166,7 @@ const ProfileContent: React.FC = () => {
         bio: profileUser.bio || '',
         interests: profileUser.interests || [],
         location: profileUser.location || '',
-        gender: profileUser.gender || '',
+        gender: profileUser.gender,
       })
     }
   }, [profileUser])
@@ -1177,7 +1188,7 @@ const ProfileContent: React.FC = () => {
               location: locationName,
             }))
 
-            const updateData: any = {
+            const updateData: updatedDataPros = {
               name: formData.name.trim(),
               bio: formData.bio.trim(),
               interests: formData.interests.filter(
@@ -1205,7 +1216,7 @@ const ProfileContent: React.FC = () => {
               location: fallbackLocation,
             }))
 
-            const updateData: any = {
+            const updateData: updatedDataPros = {
               name: formData.name.trim(),
               bio: formData.bio.trim(),
               interests: formData.interests.filter(
@@ -1286,7 +1297,7 @@ const ProfileContent: React.FC = () => {
 
     setIsSaving(true)
 
-    const updateData: any = {
+    const updateData: updatedDataPros = {
       name: formData.name.trim(),
       bio: formData.bio.trim(),
       interests: formData.interests.filter(
@@ -1356,22 +1367,25 @@ const ProfileContent: React.FC = () => {
     }, 300)
   }
 
-  const navigateGallery = (direction: 'prev' | 'next') => {
-    if (selectedPhotoIndex === null || !profileUser?.photos) return
+  const navigateGallery = useCallback(
+    (direction: 'prev' | 'next') => {
+      if (selectedPhotoIndex === null || !profileUser?.photos) return
 
-    const totalPhotos = profileUser.photos.length
-    let newIndex: number
+      const totalPhotos = profileUser.photos.length
+      let newIndex: number
 
-    if (direction === 'prev') {
-      newIndex =
-        selectedPhotoIndex > 0 ? selectedPhotoIndex - 1 : totalPhotos - 1
-    } else {
-      newIndex =
-        selectedPhotoIndex < totalPhotos - 1 ? selectedPhotoIndex + 1 : 0
-    }
+      if (direction === 'prev') {
+        newIndex =
+          selectedPhotoIndex > 0 ? selectedPhotoIndex - 1 : totalPhotos - 1
+      } else {
+        newIndex =
+          selectedPhotoIndex < totalPhotos - 1 ? selectedPhotoIndex + 1 : 0
+      }
 
-    setSelectedPhotoIndex(newIndex)
-  }
+      setSelectedPhotoIndex(newIndex)
+    },
+    [selectedPhotoIndex, profileUser?.photos]
+  )
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1392,7 +1406,7 @@ const ProfileContent: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedPhotoIndex, profileUser?.photos])
+  }, [selectedPhotoIndex, navigateGallery])
 
   // Show loading while fetching profile
   if (loading && !profileUser) {
@@ -1404,13 +1418,14 @@ const ProfileContent: React.FC = () => {
       <div className='max-w-4xl mx-auto'>
         {/* Header Section */}
         <div className='bg-white rounded-2xl sm:rounded-3xl shadow-lg border border-gray-100 overflow-hidden mb-6 sm:mb-8'>
-          <div className='bg-gradient-to-r from-pink-500 to-purple-600 h-24 sm:h-32 relative'>
+          <div className=' bg-pink-500 h-24 sm:h-32 relative'>
             <div className='absolute -bottom-12 sm:-bottom-16 left-4 sm:left-8'>
               <div className='w-24 h-24 sm:w-32 sm:h-32 rounded-full border-4 border-white shadow-lg bg-white overflow-hidden'>
                 {profileUser?.photos && profileUser.photos.length > 0 ? (
-                  <img
+                  <Image
                     src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${profileUser.photos[0]}`}
                     alt='Profile'
+                    fill
                     className='w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform duration-300'
                     onClick={() => openGallery(0)}
                   />
@@ -1582,8 +1597,8 @@ const ProfileContent: React.FC = () => {
                     />
                   </div>
                   <p className='text-xs sm:text-sm text-gray-500'>
-                    Using "Use Current" will save your GPS coordinates for
-                    accurate distance calculations in Discovery.
+                    Using &quot;Use Current&quot; will save your GPS coordinates
+                    for accurate distance calculations in Discovery.
                   </p>
                 </div>
               </div>
@@ -1642,7 +1657,7 @@ const ProfileContent: React.FC = () => {
                     (interest: string, index: number) => (
                       <span
                         key={index}
-                        className='bg-gradient-to-r from-pink-500 to-purple-600 text-white px-3 py-1 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium shadow-sm'
+                        className=' bg-pink-500 text-white px-3 py-1 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium shadow-sm'
                       >
                         {interest}
                       </span>
@@ -1651,16 +1666,16 @@ const ProfileContent: React.FC = () => {
                   {(!profileUser?.interests ||
                     profileUser.interests.length === 0) && (
                     <div className='flex flex-wrap gap-2 sm:gap-3'>
-                      <span className='bg-gradient-to-r from-pink-500 to-purple-600 text-white px-3 py-1 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium shadow-sm'>
+                      <span className=' bg-pink-500  text-white px-3 py-1 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium shadow-sm'>
                         Art
                       </span>
-                      <span className='bg-gradient-to-r from-pink-500 to-purple-600 text-white px-3 py-1 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium shadow-sm'>
+                      <span className=' bg-pink-500  text-white px-3 py-1 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium shadow-sm'>
                         Music
                       </span>
-                      <span className='bg-gradient-to-r from-pink-500 to-purple-600 text-white px-3 py-1 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium shadow-sm'>
+                      <span className=' bg-pink-500  text-white px-3 py-1 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium shadow-sm'>
                         Travel
                       </span>
-                      <span className='bg-gradient-to-r from-pink-500 to-purple-600 text-white px-3 py-1 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium shadow-sm'>
+                      <span className=' bg-pink-500  text-white px-3 py-1 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium shadow-sm'>
                         Foodie
                       </span>
                     </div>
@@ -1685,7 +1700,7 @@ const ProfileContent: React.FC = () => {
                   }
                   onClick={handleSubmit}
                   disabled={isSaving || loading}
-                  btnStyle='bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 sm:px-8 py-3 rounded-xl hover:from-pink-600 hover:to-purple-700 transition-all disabled:opacity-50 font-medium text-base sm:text-lg shadow-lg min-w-[120px] sm:min-w-[140px]'
+                  btnStyle=' bg-pink-500 text-white px-6 sm:px-8 py-3 rounded-xl hover:from-pink-600 hover:to-purple-700 transition-all disabled:opacity-50 font-medium text-base sm:text-lg shadow-lg min-w-[120px] sm:min-w-[140px]'
                 />
               </div>
             )}
@@ -1698,7 +1713,7 @@ const ProfileContent: React.FC = () => {
             <h3 className='text-lg sm:text-xl font-semibold text-gray-900'>
               Photos
             </h3>
-            <label className='bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl hover:from-pink-600 hover:to-purple-700 transition-all cursor-pointer disabled:opacity-50 font-medium shadow-sm text-sm sm:text-base text-center'>
+            <label className=' bg-pink-500  text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl hover:from-pink-600 hover:to-purple-700 transition-all cursor-pointer disabled:opacity-50 font-medium shadow-sm text-sm sm:text-base text-center'>
               {loading ? 'Uploading...' : 'Upload Photos'}
               <input
                 type='file'
@@ -1718,9 +1733,10 @@ const ProfileContent: React.FC = () => {
                   className='w-full h-24 sm:h-32 rounded-lg sm:rounded-xl overflow-hidden cursor-pointer shadow-md'
                   onClick={() => openGallery(index)}
                 >
-                  <img
+                  <Image
                     src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${photo}`}
                     alt={`Profile ${index + 1}`}
+                    fill
                     className='w-full h-full object-cover hover:scale-105 transition-transform duration-300'
                   />
                 </div>
@@ -1780,9 +1796,10 @@ const ProfileContent: React.FC = () => {
           >
             {/* Main Image */}
             <div className='relative flex-1 flex items-center justify-center h-full'>
-              <img
+              <Image
                 src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${profileUser.photos[selectedPhotoIndex]}`}
                 alt='Gallery view'
+                fill
                 className='max-w-full max-h-full object-contain rounded-lg'
               />
             </div>
@@ -1879,9 +1896,10 @@ const ProfileContent: React.FC = () => {
                       setSelectedPhotoIndex(index)
                     }}
                   >
-                    <img
+                    <Image
                       src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${photo}`}
                       alt={`Thumbnail ${index + 1}`}
+                      fill
                       className='w-full h-full object-cover'
                     />
                   </div>
