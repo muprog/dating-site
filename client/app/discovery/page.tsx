@@ -225,6 +225,64 @@ const MatchModal = ({
 )
 
 // Image Modal Component
+// const ImageModal = ({
+//   photos,
+//   currentPhotoIndex,
+//   onClose,
+//   onNext,
+//   onPrev,
+//   userName,
+// }: {
+//   photos: string[]
+//   currentPhotoIndex: number
+//   onClose: () => void
+//   onNext: () => void
+//   onPrev: () => void
+//   userName: string
+// }) => (
+//   <div className='fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4'>
+//     <div className='relative max-w-4xl max-h-full w-full'>
+//       <Button
+//         title='✕'
+//         onClick={onClose}
+//         btnStyle='absolute top-4 right-4 z-10 text-white text-2xl bg-black/50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-black/70 transition-colors p-0 min-w-0'
+//       />
+
+//       {photos.length > 1 && (
+//         <>
+//           <Button
+//             title='‹'
+//             onClick={onPrev}
+//             btnStyle='absolute left-4 top-1/2 transform -translate-y-1/2 z-10 text-white text-2xl bg-black/50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-black/70 transition-colors p-0 min-w-0'
+//             disabled={currentPhotoIndex === 0}
+//           />
+//           <Button
+//             title='›'
+//             onClick={onNext}
+//             btnStyle='absolute right-4 top-1/2 transform -translate-y-1/2 z-10 text-white text-2xl bg-black/50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-black/70 transition-colors p-0 min-w-0'
+//             disabled={currentPhotoIndex === photos.length - 1}
+//           />
+//         </>
+//       )}
+
+//       <div className='flex flex-col items-center'>
+//         <Image
+//           src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${photos[currentPhotoIndex]}`}
+//           alt={`${userName} - Photo ${currentPhotoIndex + 1}`}
+//           fill
+//           className='max-w-full max-h-[80vh] object-contain rounded-lg'
+//         />
+//         <div className='text-white mt-4 text-center'>
+//           <p>
+//             {currentPhotoIndex + 1} of {photos.length}
+//           </p>
+//         </div>
+//       </div>
+//     </div>
+//   </div>
+// )
+
+// Image Modal Component
 const ImageModal = ({
   photos,
   currentPhotoIndex,
@@ -241,7 +299,7 @@ const ImageModal = ({
   userName: string
 }) => (
   <div className='fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4'>
-    <div className='relative max-w-4xl max-h-full w-full'>
+    <div className='relative w-full h-full flex items-center justify-center'>
       <Button
         title='✕'
         onClick={onClose}
@@ -265,17 +323,17 @@ const ImageModal = ({
         </>
       )}
 
-      <div className='flex flex-col items-center'>
+      <div className='relative w-full max-w-4xl max-h-[80vh] flex items-center justify-center'>
         <Image
           src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/${photos[currentPhotoIndex]}`}
           alt={`${userName} - Photo ${currentPhotoIndex + 1}`}
-          fill
-          className='max-w-full max-h-[80vh] object-contain rounded-lg'
+          width={800}
+          height={600}
+          className='w-auto h-auto max-w-[80%] max-h-[80%] object-contain rounded-lg'
+          sizes='(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 800px'
         />
-        <div className='text-white mt-4 text-center'>
-          <p>
-            {currentPhotoIndex + 1} of {photos.length}
-          </p>
+        <div className='absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white bg-black/50 rounded-full px-4 py-2 text-sm'>
+          {currentPhotoIndex + 1} / {photos.length}
         </div>
       </div>
     </div>

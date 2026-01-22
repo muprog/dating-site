@@ -94,7 +94,7 @@ export default function LandingPage() {
     setIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length)
 
   return (
-    <section className='relative w-full h-screen flex flex-col justify-center items-center text-white bg-pink-200 overflow-hidden'>
+    <section className='relative w-full h-screen flex flex-col justify-center items-center text-white bg-pink-500 overflow-hidden'>
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
