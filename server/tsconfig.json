@@ -11,8 +11,8 @@
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
 
-    "strict": false,
-    "noImplicitAny": false,
+    "strict": true,
+    "strictNullChecks": true,
     "jsx": "react-jsx",
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
