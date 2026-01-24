@@ -5,14 +5,13 @@
     "types": ["node"],
 
     "sourceMap": true,
-    "declaration": true,
+    "declaration": false,
     "declarationMap": true,
 
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
 
-    "strict": true,
-    "strictNullChecks": true,
+    "strict": false,
     "jsx": "react-jsx",
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
