@@ -1,4 +1,4 @@
-const mongoose = require('mongoose')
+import mongoose = require('mongoose')
 const { Schema } = mongoose
 
 const messageSchema = new Schema(
@@ -38,4 +38,5 @@ const messageSchema = new Schema(
 // Index for faster queries
 messageSchema.index({ matchId: 1, createdAt: -1 })
 
-module.exports = mongoose.model('Message', messageSchema)
+const Message = mongoose.model('Message', messageSchema)
+export default Message

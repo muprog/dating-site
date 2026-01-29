@@ -38,12 +38,14 @@
     "declarationMap": true,
 
     "noUncheckedIndexedAccess": true,
+    "rootDir": "./src",
+    "outDir": "./dist",
     "exactOptionalPropertyTypes": true,
 
-    "strictNullChecks": false,
+    "strictNullChecks": true,
     "strict": true,
     "jsx": "react-jsx",
-    "verbatimModuleSyntax": true,
+    // "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
     "skipLibCheck": true,

@@ -82,5 +82,4 @@ UserSchema.index({ geoLocation: '2dsphere' })
 // Create model
 const User = mongoose.model('User', UserSchema)
 
-// Export with type casting
-module.exports = User as Model<IUser>
+export default User

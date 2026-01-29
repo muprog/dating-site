@@ -33,7 +33,7 @@
 // module.exports = mongoose.model('Swipe', swipeSchema)
 
 // models/Swipe.ts
-const mongoose = require('mongoose')
+import mongoose = require('mongoose')
 
 const swipeSchema = new mongoose.Schema(
   {
@@ -64,4 +64,5 @@ swipeSchema.index({ swiper: 1, swiped: 1 }, { unique: true })
 // Index for finding mutual likes
 swipeSchema.index({ swiped: 1, swiper: 1, action: 1 })
 
-module.exports = mongoose.model('Swipe', swipeSchema)
+const Swipe = mongoose.model('Swipe', swipeSchema)
+export default Swipe

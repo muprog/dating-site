@@ -80,7 +80,7 @@
 // module.exports = mongoose.model('Match', matchSchema)
 
 // models/Match.js - FINAL VERSION
-const mongoose = require('mongoose')
+import mongoose from 'mongoose'
 
 const matchSchema = new mongoose.Schema(
   {
@@ -131,4 +131,6 @@ matchSchema.index({ initiatedBy: 1 })
 // Remove any pre-save hooks that might cause issues
 // matchSchema.pre('save', function(next) { ... }) // Remove if exists
 
-module.exports = mongoose.model('Match', matchSchema)
+const Match = mongoose.model('Match', matchSchema)
+
+export default Match

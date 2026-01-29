@@ -1,4 +1,4 @@
-const express = require('express')
+import express = require('express')
 const router = express.Router()
 const Swipe = require('../models/Swipe')
 const Match = require('../models/Match')

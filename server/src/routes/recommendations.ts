@@ -781,7 +781,7 @@
 
 const express = require('express')
 const router = express.Router()
-const User = require('../models/User')
+import User from '../models/User'
 const Swipe = require('../models/Swipe')
 const auth = require('../middleware/auth')
 
