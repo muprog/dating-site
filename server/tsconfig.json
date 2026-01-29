@@ -1,3 +1,32 @@
+// {
+//   "compilerOptions": {
+//     "module": "commonjs",
+//     "target": "esnext",
+//     "types": ["node"],
+
+//     "sourceMap": true,
+//     "declaration": true,
+//     "declarationMap": true,
+
+//     "noUncheckedIndexedAccess": true,
+//     "exactOptionalPropertyTypes": true,
+
+//     "strict": true,
+//     "jsx": "react-jsx",
+//     "verbatimModuleSyntax": true,
+//     "isolatedModules": true,
+//     "noUncheckedSideEffectImports": true,
+//     "moduleDetection": "force",
+//     "rootDir": "./src",
+//     "outDir": "./dist",
+//     "esModuleInterop": true,
+//     "skipLibCheck": true,
+//     "allowSyntheticDefaultImports": true
+//   },
+//   "include": ["src/**/*"],
+//   "exclude": ["node_modules", "dist"]
+// }
+
 {
   "compilerOptions": {
     "module": "commonjs",
@@ -5,24 +34,22 @@
     "types": ["node"],
 
     "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
+    "declaration": false,
+    "declarationMap": false,
 
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
 
-    "strict": true,
-    "jsx": "react-jsx",
+    "strict": false,
+    "strictNullChecks": false,
+    "jsx": "preserve",
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
-    "moduleDetection": "force",
-    "rootDir": "./src",
-    "outDir": "./dist",
-    "esModuleInterop": true,
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true
   },
+  // "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
