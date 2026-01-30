@@ -42,7 +42,6 @@ const profileSlice = createSlice({
   name: 'profile',
   initialState,
   reducers: {
-    // Get Profile
     getProfileRequest: (state) => {
       state.loading = true
       state.error = null
@@ -57,7 +56,6 @@ const profileSlice = createSlice({
       state.error = action.payload
     },
 
-    // Update Profile
     updateProfileRequest: (
       state,
       _action: PayloadAction<Partial<UserProfile>>
@@ -78,7 +76,6 @@ const profileSlice = createSlice({
       state.message = null
     },
 
-    // Upload Photos
     uploadPhotosRequest: (state, _action: PayloadAction<FormData>) => {
       state.loading = true
       state.error = null
@@ -96,7 +93,6 @@ const profileSlice = createSlice({
       state.message = null
     },
 
-    // Delete Photo
     deletePhotoRequest: (state, _action: PayloadAction<string>) => {
       state.loading = true
       state.error = null
@@ -114,7 +110,6 @@ const profileSlice = createSlice({
       state.message = null
     },
 
-    // Clear messages and errors
     clearMessage: (state) => {
       state.message = null
     },
@@ -122,7 +117,6 @@ const profileSlice = createSlice({
       state.error = null
     },
 
-    // Reset profile state
     resetProfile: (state) => {
       state.loading = false
       state.user = null

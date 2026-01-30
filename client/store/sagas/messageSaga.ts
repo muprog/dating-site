@@ -20,8 +20,6 @@ import {
 import { messageApi } from '../services/messageApi'
 import { Match, Message } from '../../types/messaging'
 
-// Worker Saga: Get matches
-// sagas/messageSaga.ts - Update handleGetMatches
 function* handleGetMatches(): SagaIterator {
   console.log('🔄 [handleGetMatches] Saga starting...')
 
@@ -39,19 +37,16 @@ function* handleGetMatches(): SagaIterator {
       )
       yield put(getMatchesSuccess(response.matches))
     } else {
-      // Even if not successful, dispatch empty matches to avoid UI errors
       console.log('⚠️ [handleGetMatches] No matches found or error occurred')
       yield put(getMatchesSuccess([]))
     }
   } catch (error: any) {
     console.error('❌ [handleGetMatches] Error:', error.message)
 
-    // Dispatch empty matches on error
     yield put(getMatchesSuccess([]))
   }
 }
 
-// Worker Saga: Get messages for a match
 function* handleGetMessages(
   action: ReturnType<typeof getMessagesRequest>
 ): SagaIterator {
@@ -92,7 +87,6 @@ function* handleGetMessages(
   }
 }
 
-// Worker Saga: Send message
 function* handleSendMessage(
   action: ReturnType<typeof sendMessageRequest>
 ): SagaIterator {
@@ -178,7 +172,7 @@ function* handleEditMessage(
     yield put(editMessageFailure(errorMessage))
   }
 }
-// sagas/messageSaga.ts - Add this worker saga
+
 function* handleGetUnreadTotal(): SagaIterator {
   console.log('🔄 [handleGetUnreadTotal] Saga starting...')
 
@@ -212,7 +206,6 @@ function* handleGetUnreadTotal(): SagaIterator {
   }
 }
 
-// Watcher Saga
 export function* messageSaga() {
   yield takeLatest(getMatchesRequest.type, handleGetMatches)
   yield takeLatest(getMessagesRequest.type, handleGetMessages)

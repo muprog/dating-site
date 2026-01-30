@@ -1,4 +1,3 @@
-// hooks/useUnreadCount.ts
 import { useEffect, useCallback, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState, AppDispatch } from '../store/store'

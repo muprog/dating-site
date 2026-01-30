@@ -1,7 +1,4 @@
-// const mongoose = require('mongoose')
-// const { Schema, Document } = mongoose
 import mongoose, { Schema, Document, Model } from 'mongoose'
-// import type { Model } from 'mongoose' // type import
 
 export interface IUser extends Document {
   email: string
@@ -13,7 +10,7 @@ export interface IUser extends Document {
   gender?: 'male' | 'female' | 'other'
   geoLocation?: {
     type: 'Point'
-    coordinates: [number, number] // [longitude, latitude]
+    coordinates: [number, number]
   }
   bio?: string
   photos?: string[]
@@ -51,8 +48,8 @@ const UserSchema = new Schema(
         default: 'Point',
       },
       coordinates: {
-        type: [Number], // [longitude, latitude]
-        default: [0, 0], // ✅ fix: prevents Mongo error
+        type: [Number],
+        default: [0, 0],
       },
     },
     location: { type: String },
@@ -79,8 +76,6 @@ const UserSchema = new Schema(
 
 UserSchema.index({ geoLocation: '2dsphere' })
 
-// Create model
 const User = mongoose.model<IUser>('User', UserSchema)
 
-// Export with type casting
 export default User

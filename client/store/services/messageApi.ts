@@ -1,68 +1,3 @@
-// // store/services/messageApi.ts
-// import api from '../services/api'
-
-// export interface MatchUser {
-//   _id: string
-//   id: string
-//   name: string
-//   photos: string[]
-//   age?: number
-//   email: string
-// }
-
-// export interface Match {
-//   _id: string
-//   matchId: string
-//   otherUser: MatchUser
-//   initiatedBy: string
-//   lastMessage: string | null
-//   lastMessageAt: string | null
-//   unreadCount: number
-//   createdAt: string
-//   updatedAt: string
-// }
-
-// export interface ApiResponse<T> {
-//   success: boolean
-//   matches: T[]
-//   count?: number
-//   message?: string
-// }
-
-// export const messageApi = {
-//   // Get user's matches
-//   getMatches: async (): Promise<ApiResponse<Match>> => {
-//     try {
-//       console.log('📞 Fetching matches from API...')
-//       const response = await api.get('/messages/matches')
-//       console.log('✅ Matches response:', response.data)
-//       return response.data
-//     } catch (error: any) {
-//       console.error('❌ Error fetching matches:', error)
-//       throw error
-//     }
-//   },
-
-//   // Get messages for a specific match
-//   getMessages: async (matchId: string): Promise<any> => {
-//     const response = await api.get(`/messages/${matchId}`)
-//     return response.data
-//   },
-
-//   // Send a message
-//   sendMessage: async (matchId: string, content: string): Promise<any> => {
-//     const response = await api.post(`/messages/${matchId}`, { content })
-//     return response.data
-//   },
-
-//   // Mark messages as read
-//   markAsRead: async (matchId: string): Promise<any> => {
-//     const response = await api.post(`/messages/${matchId}/read`)
-//     return response.data
-//   },
-// }
-
-// store/services/messageApi.ts
 import api from '../services/api'
 
 export interface MatchUser {
@@ -113,8 +48,6 @@ export interface MessageResponse {
 }
 
 export const messageApi = {
-  // Get user's matches - UPDATED TO EXPECT NEW FORMAT
-  // store/services/messageApi.ts - Update getMatches function
   getMatches: async (): Promise<{ success: boolean; matches: Match[] }> => {
     try {
       console.log('📞 [messageApi] Fetching matches...')
@@ -127,7 +60,6 @@ export const messageApi = {
         matchesLength: response.data.matches?.length,
       })
 
-      // Validate the response structure
       if (!response.data.success) {
         console.error(
           '❌ [messageApi] Response not successful:',
@@ -162,7 +94,6 @@ export const messageApi = {
         url: error.config?.url,
       })
 
-      // Return empty matches instead of throwing
       return {
         success: false,
         matches: [],
@@ -170,14 +101,12 @@ export const messageApi = {
     }
   },
 
-  // Get messages for a specific match
   getMessages: async (matchId: string): Promise<MessagesResponse> => {
     console.log(`📞 Fetching messages for match: ${matchId}`)
     const response = await api.get(`/messages/${matchId}`)
     return response.data
   },
 
-  // Send a message
   sendMessage: async (
     matchId: string,
     content: string
@@ -195,7 +124,6 @@ export const messageApi = {
     }
   },
 
-  // Mark messages as read
   markAsRead: async (matchId: string): Promise<{ success: boolean }> => {
     try {
       const response = await api.post(`/messages/mark-read/${matchId}`)
@@ -223,7 +151,6 @@ export const messageApi = {
         error
       )
 
-      // Return a consistent error response
       return {
         success: false,
         message: undefined,

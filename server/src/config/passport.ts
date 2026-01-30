@@ -4,7 +4,7 @@ const FacebookStrategy = require('passport-facebook').Strategy
 import User from '../models/User'
 
 passport.serializeUser((user: any, done) => {
-  done(null, user._id?.toString() ?? user.id ?? user) // store id/string
+  done(null, user._id?.toString() ?? user.id ?? user)
 })
 
 passport.deserializeUser(async (id: string, done) => {
@@ -37,14 +37,12 @@ passport.use(
         const email = profile.emails?.[0]?.value
         let user = await User.findOne({ googleId })
         if (!user) {
-          // try by email (if exists, link accounts)
           if (email) {
             user = await User.findOne({ email })
           }
         }
 
         if (user) {
-          // if existing user doesn't have googleId, add it
           if (!user.googleId) {
             user.googleId = googleId
             await user.save()
@@ -52,7 +50,6 @@ passport.use(
           return done(null, user)
         }
 
-        // create new user
         const newUser = await User.create({
           googleId,
           email: email ?? `no-email-${googleId}@example.com`,

@@ -29,17 +29,13 @@ function* handleCreateSwipe(action: SwipeAction): any {
       throw new Error('Invalid swipe action')
     }
 
-    // Make API call
     const response = yield call(axios.post, '/api/swipes', {
       swipedUserId,
       action: swipeAction,
     })
 
-    // Track swipes in discovery slice
     if (swipeAction === 'like') {
       yield put(addLikedUser(swipedUserId))
-
-      // If this was updating a pass to like, handle accordingly
       if (response.data.wasUpdated) {
         yield put(updatePassToLike(swipedUserId))
       }
@@ -47,7 +43,6 @@ function* handleCreateSwipe(action: SwipeAction): any {
       yield put(addPassedUser(swipedUserId))
     }
 
-    // Handle success
     yield put(
       createSwipeSuccess({
         match: response.data.isMatch ? response.data.matchedUser : null,
@@ -55,7 +50,6 @@ function* handleCreateSwipe(action: SwipeAction): any {
       })
     )
   } catch (error: any) {
-    // Simple error handling
     const errorMessage =
       error.response?.data?.message || error.message || 'Swipe failed'
     yield put(createSwipeFailure(errorMessage))

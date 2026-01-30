@@ -1,4 +1,3 @@
-// utils/debugUtils.ts
 export const logDebugInfo = () => {
   if (typeof window === 'undefined') return
 

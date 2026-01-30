@@ -1,4 +1,3 @@
-// store/slices/matchSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
 interface MatchUser {
@@ -48,11 +47,9 @@ const matchSlice = createSlice({
       state.matches = []
     },
     addNewMatch: (state, action: PayloadAction<Match>) => {
-      // Add new match to the beginning of the list
       state.matches.unshift(action.payload)
     },
     removeMatch: (state, action: PayloadAction<string>) => {
-      // Remove match by ID (when unlike happens)
       state.matches = state.matches.filter(
         (match) => match._id !== action.payload
       )

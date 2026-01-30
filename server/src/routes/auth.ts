@@ -20,13 +20,9 @@ const transporter = nodemailer.createTransport({
 
 router.post('/logout', auth, async (req, res) => {
   try {
-    // ALSO clear the session cookie
     const allKnownCookies = [
-      // Authentication
       'token',
       'connect.sid',
-
-      // Analytics/Tracking
       'rl_page_init_referrer',
       'rl_page_init_referring_domain',
       'rl_anonymous_id',
@@ -34,11 +30,6 @@ router.post('/logout', auth, async (req, res) => {
       'rl_trait',
       'rl_session',
       'ph_phc_4URIAm1uYfJO7j8kWSe0J8lc8IqnstRLS7Jx8NcakHo_posthog',
-
-      // Add any other cookies your app uses
-      // 'remember_me',
-      // 'user_preferences',
-      // etc...
     ]
     allKnownCookies.forEach((cookieName) => {
       res.clearCookie(cookieName, {
@@ -48,14 +39,6 @@ router.post('/logout', auth, async (req, res) => {
         path: '/',
       })
     })
-    // res.clearCookie('connect.sid', {
-    //   httpOnly: true,
-    //   secure: process.env.NODE_ENV === 'production',
-    //   sameSite: 'strict',
-    //   path: '/',
-    // })
-
-    // Clear session if using express-session
     if (req.session) {
       req.session.destroy((err) => {
         if (err) {
@@ -87,22 +70,18 @@ router.get(
     session: false,
   }),
   (req: Request, res: Response) => {
-    // req.user is set by passport
     const user = req.user as any
     const token = jwt.sign(
       { id: user._id?.toString(), email: user.email },
       process.env.JWT_SECRET as string,
       { expiresIn: '7d' }
     )
-    // redirect to client with token
     res.redirect(`${process.env.FRONTEND_URL}/social-success?token=${token}`)
   }
 )
 
-// start Facebook OAuth
 router.get('/facebook', passport.authenticate('facebook', { scope: ['email'] }))
 
-// Facebook callback
 router.get(
   '/facebook/callback',
   passport.authenticate('facebook', {
@@ -137,7 +116,7 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
       email,
       password: hashed,
       otp,
-      otpExpires: Date.now() + 10 * 60 * 1000, // 10 min
+      otpExpires: Date.now() + 10 * 60 * 1000,
       verified: false,
     })
 
@@ -155,13 +134,12 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
   }
 })
 
-// Verify OTP
 router.post(
   '/verify-otp',
   async (req: Request, res: Response): Promise<void> => {
     try {
       const { email, otp } = req.body
-      // console.log(email)
+
       const user = await User.findOne({ email })
       if (!user) {
         res.status(400).json({ message: 'User not found' })
@@ -180,7 +158,6 @@ router.post(
       user.otp = null
       user.otpExpires = null
       await user.save()
-      // console.log('111', email)
       res.json({ message: '✅ User verified successfully' })
     } catch (err: any) {
       res.status(500).json({ message: 'Server error', error: err.message })
@@ -191,8 +168,6 @@ router.post(
 router.post('/login', async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body
-
-    // Validate input
     if (!email || !password) {
       return res
         .status(400)
@@ -215,14 +190,12 @@ router.post('/login', async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Invalid email or password' })
     }
 
-    // Generate JWT
     const token = jwt.sign(
       { id: user._id, email: user.email },
       process.env.JWT_SECRET!,
       { expiresIn: '1h' }
     )
 
-    // Store token in cookie
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -252,14 +225,12 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'User not found' })
     }
 
-    // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString()
 
     user.resetPasswordOTP = otp
     user.resetPasswordExpires = new Date(Date.now() + 10 * 60 * 1000) // valid for 10 mins
     await user.save()
 
-    // Send OTP via email
     await transporter.sendMail({
       to: user.email,
       subject: 'Your Password Reset OTP',
@@ -279,13 +250,13 @@ router.post('/reset-password', async (req: Request, res: Response) => {
     const user = await User.findOne({
       email,
       resetPasswordOTP: otp,
-      resetPasswordExpires: { $gt: Date.now() }, // not expired
+      resetPasswordExpires: { $gt: Date.now() },
     })
     if (!user) {
       return res.status(400).json({ message: 'Invalid or expired OTP' })
     }
     const hashed = await bcrypt.hash(newPassword, 10)
-    user.password = hashed // hash before saving if using bcrypt
+    user.password = hashed
     user.resetPasswordOTP = undefined
     user.resetPasswordExpires = undefined
     await user.save()
@@ -326,12 +297,11 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 10 * 1024 * 1024, // Increase to 10MB
+    fileSize: 10 * 1024 * 1024,
     files: 10,
   },
 })
 
-// Add proper error handling middleware for multer
 const handleMulterError = (error: any, req: any, res: any, next: any) => {
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {
@@ -380,7 +350,6 @@ router.put('/profile', auth, async (req: any, res: any) => {
       req.body
     console.log('🔄 Updating profile with data:', req.body)
 
-    // Validate required fields
     if (!name || !name.trim()) {
       return res.status(400).json({
         message: 'Name is required',
@@ -405,13 +374,11 @@ router.put('/profile', auth, async (req: any, res: any) => {
     if (interests) updateData.interests = interests
     if (gender) updateData.gender = gender
 
-    // Store location in a separate field
     if (location !== undefined) {
       updateData.location = location.trim()
       console.log('📍 Location to store:', location)
     }
 
-    // ADD THIS: Update geoLocation if coordinates are provided
     if (latitude !== undefined && longitude !== undefined) {
       console.log('🗺️ Updating coordinates:', { latitude, longitude })
       updateData.geoLocation = {
@@ -451,7 +418,6 @@ router.put('/profile', auth, async (req: any, res: any) => {
       })
     }
 
-    // Make sure to always return a proper JSON response
     res.status(500).json({
       message: 'Server error',
       error: error.message,
@@ -463,7 +429,7 @@ router.post(
   '/profile/photos',
   auth,
   upload.array('photos', 10),
-  handleMulterError, // Add this error handling middleware
+  handleMulterError,
   async (req: any, res: any) => {
     try {
       if (!req.files || req.files.length === 0) {
@@ -512,7 +478,6 @@ router.delete(
         req.user.id
       )
 
-      // First, get the user to check the photo at that index
       const user = await User.findById(req.user.id)
       if (!user) {
         return res.status(404).json({ message: 'User not found' })
@@ -521,12 +486,10 @@ router.delete(
         user.photos = []
         await user.save()
       }
-      // Check if the index is valid
       if (photoIndex < 0 || photoIndex >= user.photos.length) {
         return res.status(400).json({ message: 'Invalid photo index' })
       }
 
-      // Remove the photo at the specified index
       user.photos.splice(photoIndex, 1)
       await user.save()
 
@@ -559,7 +522,6 @@ router.get('/test-cookies', (req: express.Request, res: express.Response) => {
 
 router.get('/check', auth, async (req: any, res) => {
   try {
-    // Get fresh user data from database
     const user = await User.findById(req.user?.id).select(
       '-password -otp -resetPasswordOTP -__v'
     )
@@ -568,7 +530,6 @@ router.get('/check', auth, async (req: any, res) => {
       return res.status(404).json({ message: 'User not found' })
     }
 
-    // Update last active timestamp
     user.lastActive = new Date()
     await user.save()
 

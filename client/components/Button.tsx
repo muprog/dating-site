@@ -3,7 +3,7 @@
 import React from 'react'
 
 type ButtonProps = {
-  title: string | React.ReactNode // Allow both string and JSX
+  title: string | React.ReactNode
   btnType?: 'button' | 'submit' | 'reset'
   btnStyle?: string
   onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void

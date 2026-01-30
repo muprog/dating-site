@@ -20,11 +20,10 @@ export interface Match {
   users: any
 }
 
-// types/messaging.ts
 export interface Message {
   _id: string
   matchId: string
-  sender: string // This is the string ID
+  sender: string
   senderId: {
     _id: string
     name: string
@@ -65,6 +64,6 @@ export interface MessageState {
       user?: User
     }
   >
-  totalUnread: number // Add this
+  totalUnread: number
   loadingUnread: boolean
 }

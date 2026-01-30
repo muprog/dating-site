@@ -15,7 +15,6 @@ const auth = async (
   next: express.NextFunction
 ) => {
   try {
-    // Get token from cookie
     const token = req?.cookies?.token
 
     console.log('🔐 Auth Middleware - Cookies:', req?.cookies)

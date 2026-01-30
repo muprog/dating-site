@@ -67,15 +67,12 @@ function* handleLogin(action: ReturnType<typeof loginRequest>): SagaIterator {
       yield put(loginFailure(response.data?.message || 'Login failed'))
     }
   } catch (error: any) {
-    // Handle AxiosError with status code 400
     if (error?.response?.status === 400) {
-      // This is the expected case for wrong credentials
       const errorMessage =
         error.response?.data?.message || 'Invalid email or password'
       console.log('🔄 Login failed (expected):', errorMessage)
       yield put(loginFailure(errorMessage))
     } else {
-      // Handle other types of errors
       console.error('❌ Unexpected login error:', error)
       const errorMessage =
         error.response?.data?.message || error.message || 'Login failed'
@@ -111,7 +108,7 @@ function* handleResetPassword(
     const response = yield call(axios.post, '/api/auth/reset-password', {
       email,
       otp,
-      newPassword: password, // match backend param
+      newPassword: password,
     })
     yield put(resetPasswordSuccess(response.data.message))
   } catch (error: any) {
@@ -125,7 +122,6 @@ function* handleLogout(): SagaIterator {
   try {
     console.log('🔄 Saga: Logging out...')
 
-    // Call logout API
     yield call(
       axios.post,
       '/api/auth/logout',
@@ -135,26 +131,22 @@ function* handleLogout(): SagaIterator {
       }
     )
 
-    // Clear all Redux states
     yield put(logoutSuccess())
     yield put(clearProfile())
     yield put(clearDiscovery())
     yield put(clearSwipe())
 
-    // Force hard redirect to login
     if (typeof window !== 'undefined') {
       window.location.href = '/login'
     }
   } catch (error: any) {
     console.error('❌ Saga: Logout failed:', error)
 
-    // Even if API fails, clear everything locally
     yield put(logoutSuccess())
     yield put(clearProfile())
     yield put(clearDiscovery())
     yield put(clearSwipe())
 
-    // Redirect to login
     if (typeof window !== 'undefined') {
       window.location.href = '/login'
     }

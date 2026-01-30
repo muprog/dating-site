@@ -88,7 +88,6 @@ class WebSocketService {
           }
         })
 
-        // Setup event listeners
         this.setupSocketListeners()
       } catch (error) {
         console.error('❌ WebSocket connection error:', error)
@@ -111,7 +110,6 @@ class WebSocketService {
     this.socket.on('unread-update', (data: any) => {
       console.log('📊 WebSocket: Received unread update:', data)
 
-      // Update total unread count in Redux
       store.dispatch(
         getUnreadTotalSuccess({
           totalUnread: data.totalUnread || 0,
@@ -119,7 +117,6 @@ class WebSocketService {
         })
       )
 
-      // Also increment/decrement as needed based on action
       if (data.action === 'increment') {
         store.dispatch(incrementTotalUnread())
       } else if (data.action === 'decrement' && data.count) {
@@ -129,7 +126,6 @@ class WebSocketService {
       this.triggerEvent('unread-update', data)
     })
     this.socket.on('message-edited', this.messageEditedHandler)
-    // Listen for new messages
     this.socket.on('new-message', (message: any) => {
       console.log('📩 WebSocket: Received new message:', {
         id: message._id,
@@ -138,7 +134,6 @@ class WebSocketService {
         sender: message.sender,
       })
 
-      // If this is a real message replacing an optimistic one
       if (message.tempId) {
         console.log(
           '🔄 Replacing optimistic message with tempId:',
@@ -157,7 +152,6 @@ class WebSocketService {
       this.triggerEvent('new-message', message)
     })
 
-    // Listen for typing indicators
     this.socket.on('user-typing', (data: any) => {
       console.log('✍️ WebSocket: User typing:', data)
       store.dispatch(
@@ -173,7 +167,6 @@ class WebSocketService {
       this.triggerEvent('user-typing', data)
     })
 
-    // Listen for online status updates
     this.socket.on('user-status', (data: any) => {
       console.log('📡 WebSocket: User status changed:', data)
       store.dispatch(
@@ -187,7 +180,6 @@ class WebSocketService {
       this.triggerEvent('user-status', data)
     })
 
-    // Listen for online status batch
     this.socket.on('online-status-batch', (statuses: any) => {
       console.log(
         '👥 WebSocket: Received batch status for',
@@ -198,7 +190,6 @@ class WebSocketService {
       this.triggerEvent('online-status-batch', statuses)
     })
 
-    // Listen for online users list
     this.socket.on('online-users', (userIds: string[]) => {
       console.log('👥 WebSocket: Online users:', userIds.length)
       this.triggerEvent('online-users', userIds)
@@ -208,38 +199,32 @@ class WebSocketService {
       }
     })
 
-    // Listen for room joined confirmation
     this.socket.on('room-joined', (data: any) => {
       console.log('🚪 WebSocket: Room joined:', data.room)
       this.triggerEvent('room-joined', data)
     })
 
-    // Listen for message sent confirmation
     this.socket.on('message-sent', (data: any) => {
       console.log('✅ WebSocket: Message sent confirmation:', data.tempId)
       this.triggerEvent('message-sent', data)
     })
 
-    // Listen for message error
     this.socket.on('message-error', (error: any) => {
       console.error('❌ WebSocket: Message error:', error)
       this.triggerEvent('message-error', error)
     })
 
-    // Listen for messages read
     this.socket.on('messages-read', (data: any) => {
       console.log('📖 WebSocket: Messages read:', data.messageIds.length)
       this.triggerEvent('messages-read', data)
     })
 
-    // Listen for welcome
     this.socket.on('welcome', (data: any) => {
       console.log('👋 WebSocket:', data.message)
       this.triggerEvent('welcome', data)
     })
   }
 
-  // SIMPLIFIED: Just send typing events, backend handles everything
   sendTypingIndicator(matchId: string, isTyping: boolean): boolean {
     if (!this.socket?.connected) {
       console.log('⚠️ WebSocket not connected, cannot send typing indicator')
@@ -253,7 +238,6 @@ class WebSocketService {
         } for match ${matchId}`
       )
 
-      // Just emit the event, backend handles state management
       this.socket.emit('typing', { matchId, isTyping })
       return true
     } catch (error) {
@@ -262,7 +246,6 @@ class WebSocketService {
     }
   }
 
-  // Online status methods
   checkOnlineStatus(userId: string): boolean {
     if (!this.socket?.connected) {
       console.log('⚠️ WebSocket not connected, cannot check online status')
@@ -290,7 +273,6 @@ class WebSocketService {
     return true
   }
 
-  // Match room methods
   joinMatch(matchId: string): boolean {
     if (!this.socket?.connected) {
       console.log('⚠️ WebSocket not connected, cannot join match')
@@ -323,7 +305,6 @@ class WebSocketService {
     }
   }
 
-  // Message sending
   async sendMessage(
     matchId: string,
     content: string,
@@ -344,7 +325,6 @@ class WebSocketService {
         })
         this.socket?.emit('send-message', messageData)
 
-        // Set up confirmation listener
         const onMessageSent = (data: any) => {
           console.log('✅ WebSocket message sent confirmation:', data)
           if (data.success) {
@@ -352,7 +332,6 @@ class WebSocketService {
           } else {
             resolve(false)
           }
-          // Clean up listeners
           this.socket?.off('message-sent', onMessageSent)
           this.socket?.off('message-error', onMessageError)
           webSocketService.off('message-edited', this.messageEditedHandler)
@@ -361,7 +340,6 @@ class WebSocketService {
         const onMessageError = (error: any) => {
           console.error('❌ WebSocket message send error:', error)
           resolve(false)
-          // Clean up listeners
           this.socket?.off('message-sent', onMessageSent)
           this.socket?.off('message-error', onMessageError)
           webSocketService.off('message-edited', this.messageEditedHandler)
@@ -371,7 +349,6 @@ class WebSocketService {
         this.socket?.on('message-error', onMessageError)
         webSocketService.off('message-edited', this.messageEditedHandler)
 
-        // Timeout after 5 seconds
         setTimeout(() => {
           this.socket?.off('message-sent', onMessageSent)
           this.socket?.off('message-error', onMessageError)
@@ -385,7 +362,6 @@ class WebSocketService {
     })
   }
 
-  // Mark messages as read
   markMessagesAsRead(matchId: string, messageIds: string[]): boolean {
     if (
       !this.socket?.connected ||
@@ -403,8 +379,6 @@ class WebSocketService {
       return false
     }
   }
-
-  // Heartbeat for connection monitoring
   private startHeartbeat() {
     this.stopHeartbeat()
 
@@ -424,7 +398,6 @@ class WebSocketService {
     }
   }
 
-  // Event system
   on(event: string, callback: Function) {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, [])
@@ -452,8 +425,6 @@ class WebSocketService {
       }
     })
   }
-
-  // Connection status
   onConnectionChange(callback: (connected: boolean) => void) {
     this.connectionCallbacks.push(callback)
   }
@@ -503,7 +474,6 @@ class WebSocketService {
     }
   }
 
-  // Add this event listener setup
   messageEditedHandler = (data: any) => {
     console.log('✏️ WebSocket: Message edited:', {
       messageId: data.messageId,
@@ -511,7 +481,6 @@ class WebSocketService {
       content: data.content,
     })
 
-    // You need to import editMessageSuccess from your slice
     store.dispatch(
       editMessageSuccess({
         messageId: data.messageId,

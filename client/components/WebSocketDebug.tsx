@@ -10,13 +10,11 @@ const WebSocketDebug: React.FC = () => {
     const socket = webSocketService.getSocket()
 
     if (socket) {
-      // Log all socket events
       socket.onAny((event, ...args) => {
         console.log(`🔧 [Debug Socket Event] ${event}`, args)
       })
     }
 
-    // Test connection every 10 seconds
     const interval = setInterval(() => {
       console.log('🔧 WebSocket Status:', {
         connected: webSocketService.isConnected(),

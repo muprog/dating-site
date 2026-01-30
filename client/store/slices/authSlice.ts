@@ -65,10 +65,8 @@ const authSlice = createSlice({
     ) => {
       state.loading = true
     },
-    // slices/authSlice.ts - Check your loginSuccess reducer
     loginSuccess: (state, action: PayloadAction<any>) => {
       state.loading = false
-      // Make sure we're storing the user object correctly
       state.user = action.payload.user || action.payload
       state.error = null
 
@@ -79,7 +77,7 @@ const authSlice = createSlice({
 
     loginFailure: (state, action: PayloadAction<string>) => {
       state.loading = false
-      state.user = null // Remove this line - you're setting user to the error message!
+      state.user = null
       state.error = action.payload
     },
     forgotPasswordRequest: (
@@ -91,7 +89,7 @@ const authSlice = createSlice({
     forgotPasswordSuccess: (state, action: PayloadAction<string>) => {
       state.loading = false
       state.message = action.payload
-      state.otpSent = true // let frontend know OTP step is ready
+      state.otpSent = true
     },
 
     forgotPasswordFailure: (state, action: PayloadAction<string>) => {
