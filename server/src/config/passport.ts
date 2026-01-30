@@ -1,7 +1,7 @@
 import passport = require('passport')
 const GoogleStrategy = require('passport-google-oauth20').Strategy
 const FacebookStrategy = require('passport-facebook').Strategy
-const User = require('../models/User')
+import User from '../models/User'
 
 passport.serializeUser((user: any, done) => {
   done(null, user._id?.toString() ?? user.id ?? user) // store id/string

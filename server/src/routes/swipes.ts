@@ -1,10 +1,11 @@
 import express = require('express')
 const router = express.Router()
-const Swipe = require('../models/Swipe')
-const Match = require('../models/Match')
-const User = require('../models/User')
+import Swipe from '../models/Swipe'
+import Match from '../models/Match'
+import User from '../models/User'
+// import auth from '../middleware/auth'
 const auth = require('../middleware/auth')
-const mongoose = require('mongoose')
+import mongoose from 'mongoose'
 // router.post('/', auth, async (req: any, res: any) => {
 //   try {
 //     const { swipedUserId, action } = req.body

@@ -11,7 +11,6 @@ const path = require('path')
 
 const app = express()
 
-// Session middleware
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'keyboard cat',

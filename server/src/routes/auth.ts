@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken')
 const crypto = require('crypto')
 import type { Request, Response } from 'express'
 import passport = require('passport')
-const User = require('../models/User')
+import User from '../models/User'
 const auth = require('../middleware/auth')
 const router = express.Router()
 const multer = require('multer')
@@ -168,11 +168,14 @@ router.post(
         return
       }
 
-      if (user.otp !== otp || user.otpExpires < Date.now()) {
+      if (
+        user.otp !== otp ||
+        !user.otpExpires ||
+        user.otpExpires.getTime() < Date.now()
+      ) {
         res.status(400).json({ message: 'Invalid or expired OTP' })
         return
       }
-      // console.log(user)
       user.verified = true
       user.otp = null
       user.otpExpires = null
@@ -253,7 +256,7 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString()
 
     user.resetPasswordOTP = otp
-    user.resetPasswordExpires = Date.now() + 10 * 60 * 1000 // valid for 10 mins
+    user.resetPasswordExpires = new Date(Date.now() + 10 * 60 * 1000) // valid for 10 mins
     await user.save()
 
     // Send OTP via email
@@ -476,6 +479,9 @@ router.post(
         { $push: { photos: { $each: photoUrls } } },
         { new: true }
       ).select('-password -otp -resetPasswordOTP')
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' })
+      }
 
       console.log('✅ Photos uploaded successfully')
       res.json({
@@ -511,7 +517,10 @@ router.delete(
       if (!user) {
         return res.status(404).json({ message: 'User not found' })
       }
-
+      if (!user.photos || !Array.isArray(user.photos)) {
+        user.photos = []
+        await user.save()
+      }
       // Check if the index is valid
       if (photoIndex < 0 || photoIndex >= user.photos.length) {
         return res.status(400).json({ message: 'Invalid photo index' })

@@ -1,7 +1,7 @@
-const mongoose = require('mongoose')
-const { Schema, Document } = mongoose
-
-import type { Model } from 'mongoose' // type import
+// const mongoose = require('mongoose')
+// const { Schema, Document } = mongoose
+import mongoose, { Schema, Document, Model } from 'mongoose'
+// import type { Model } from 'mongoose' // type import
 
 export interface IUser extends Document {
   email: string
@@ -24,10 +24,10 @@ export interface IUser extends Document {
     maxDistance: number
   }
   verified?: boolean
-  otp?: string
-  otpExpires?: Date
-  resetPasswordOTP?: string
-  resetPasswordExpires?: Date
+  otp?: string | null
+  otpExpires?: Date | null
+  resetPasswordOTP?: string | undefined
+  resetPasswordExpires?: Date | undefined
   lastActive?: Date
 }
 
@@ -65,7 +65,7 @@ const UserSchema = new Schema(
       maxDistance: { type: Number, default: 50 },
     },
     verified: { type: Boolean, default: false },
-    otp: { type: String },
+    otp: { type: String, default: null },
     otpExpires: { type: Date },
     resetPasswordOTP: { type: String },
     resetPasswordExpires: { type: Date },
@@ -80,6 +80,7 @@ const UserSchema = new Schema(
 UserSchema.index({ geoLocation: '2dsphere' })
 
 // Create model
-const User = mongoose.model('User', UserSchema)
+const User = mongoose.model<IUser>('User', UserSchema)
 
+// Export with type casting
 export default User

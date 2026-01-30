@@ -1,4 +1,3 @@
-// middleware/auth.ts
 import express = require('express')
 const jwt = require('jsonwebtoken')
 

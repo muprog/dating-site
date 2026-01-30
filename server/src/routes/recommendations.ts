@@ -782,7 +782,7 @@
 const express = require('express')
 const router = express.Router()
 import User from '../models/User'
-const Swipe = require('../models/Swipe')
+import Swipe from '../models/Swipe'
 const auth = require('../middleware/auth')
 
 router.get('/recommendations', auth, async (req: any, res: any) => {
@@ -986,6 +986,38 @@ async function getHighCompatibilityUsers(
 }
 
 // 5. 🔁 Recycled Users - Passed more than 7 days ago
+// async function getRecycledUsers(currentUser: any): Promise<any[]> {
+//   const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+
+//   const passedSwipes = await Swipe.find({
+//     swiper: currentUser._id,
+//     action: 'pass',
+//     createdAt: { $lte: oneWeekAgo },
+//   }).populate('swiped')
+
+//   if (passedSwipes.length === 0) return []
+
+//   const recycledUsers: any[] = []
+
+//   for (const swipe of passedSwipes) {
+//     if (swipe.swiped && recycledUsers.length < 10) {
+//       const userData = swipe.swiped.toObject
+//         ? swipe.swiped.toObject()
+//         : swipe.swiped
+//       recycledUsers.push({
+//         ...userData,
+//         badge: {
+//           type: 'recycled',
+//           label: '🔁 You passed before',
+//           color: 'gray',
+//         },
+//       })
+//     }
+//   }
+
+//   return recycledUsers
+// }
+// 5. 🔁 Recycled Users - Passed more than 7 days ago
 async function getRecycledUsers(currentUser: any): Promise<any[]> {
   const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
 
@@ -993,31 +1025,50 @@ async function getRecycledUsers(currentUser: any): Promise<any[]> {
     swiper: currentUser._id,
     action: 'pass',
     createdAt: { $lte: oneWeekAgo },
-  }).populate('swiped')
+  }).populate('swiped') // This populates the swiped field
 
   if (passedSwipes.length === 0) return []
 
   const recycledUsers: any[] = []
 
   for (const swipe of passedSwipes) {
-    if (swipe.swiped && recycledUsers.length < 10) {
-      const userData = swipe.swiped.toObject
-        ? swipe.swiped.toObject()
-        : swipe.swiped
-      recycledUsers.push({
-        ...userData,
-        badge: {
-          type: 'recycled',
-          label: '🔁 You passed before',
-          color: 'gray',
-        },
-      })
+    // Check if swiped is populated (it will be an ObjectId if not populated)
+    if (
+      swipe.swiped &&
+      typeof swipe.swiped === 'object' &&
+      recycledUsers.length < 10
+    ) {
+      // Use type assertion to tell TypeScript this is a populated document
+      const swipedUser = swipe.swiped as any
+
+      // Check if it's a mongoose document or already an object
+      if (swipedUser.toObject) {
+        // It's a mongoose document
+        const userData = swipedUser.toObject()
+        recycledUsers.push({
+          ...userData,
+          badge: {
+            type: 'recycled',
+            label: '🔁 You passed before',
+            color: 'gray',
+          },
+        })
+      } else {
+        // It's already an object (from .lean() or similar)
+        recycledUsers.push({
+          ...swipedUser,
+          badge: {
+            type: 'recycled',
+            label: '🔁 You passed before',
+            color: 'gray',
+          },
+        })
+      }
     }
   }
 
   return recycledUsers
 }
-
 // Helper function to get base preferences
 function getBasePreferences(currentUser: any) {
   const preferredGenders = currentUser.preferences?.genders?.map(
