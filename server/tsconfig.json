@@ -1,77 +1,29 @@
-// {
-//   "compilerOptions": {
-//     "module": "commonjs",
-//     "target": "esnext",
-//     "types": ["node"],
-
-//     "sourceMap": true,
-//     "declaration": true,
-//     "declarationMap": true,
-
-//     "noUncheckedIndexedAccess": true,
-//     "rootDir": "./src",
-//     "outDir": "./dist",
-//     "exactOptionalPropertyTypes": true,
-
-//     "strictNullChecks": true,
-//     "strict": true,
-//     "jsx": "react-jsx",
-//     // "verbatimModuleSyntax": true,
-//     "isolatedModules": true,
-//     "noUncheckedSideEffectImports": true,
-//     "skipLibCheck": true,
-//     "allowSyntheticDefaultImports": true
-//   },
-//   // "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
-//   "include": ["src/**/*"],
-//   "exclude": ["node_modules", "dist"]
-// }
-
 {
   "compilerOptions": {
     "module": "commonjs",
-    "target": "ES2020",
-
-    // Path settings
-    "rootDir": "./src",
-    "outDir": "./dist",
-    "baseUrl": "./src",
-
-    // Type declarations
+    "target": "esnext",
     "types": ["node"],
 
-    // Keep strict but disable noImplicitReturns for now
-    "strict": true,
-    "noImplicitReturns": false, // Add this line
-    "strictNullChecks": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-
-    // Module resolution
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
-
-    // Source maps and declarations
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
 
-    // Other checks (disable noImplicitReturns as it's causing the error)
-    "noFallthroughCasesInSwitch": true,
-    "forceConsistentCasingInFileNames": true,
+    "noUncheckedIndexedAccess": true,
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "typeRoots": ["./node_modules/@types"],
+    "exactOptionalPropertyTypes": true,
 
-    // Skip lib check for faster compilation
+    "strictNullChecks": true,
+    "strict": true,
+    "jsx": "react-jsx",
+    // "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "noUncheckedSideEffectImports": true,
     "skipLibCheck": true,
-
-    // Disable these as they can cause issues with imports
-    "isolatedModules": false,
-    "noUncheckedSideEffectImports": false,
-
-    // React JSX if you have any React files in your server
-    "jsx": "react-jsx"
+    "allowSyntheticDefaultImports": true
   },
+  // "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
+  "exclude": ["node_modules", "dist"]
 }
