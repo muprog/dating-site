@@ -26,14 +26,52 @@
 //   "include": ["src/**/*"],
 //   "exclude": ["node_modules", "dist"]
 // }
+
 {
   "compilerOptions": {
-    "target": "es2016",
     "module": "commonjs",
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
+    "target": "ES2020",
+
+    // Path settings
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "baseUrl": "./src",
+
+    // Type declarations
+    "types": ["node"],
+
+    // Keep strict but disable noImplicitReturns for now
     "strict": true,
+    "noImplicitReturns": false, // Add this line
+    "strictNullChecks": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    // Module resolution
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+
+    // Source maps and declarations
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+
+    // Other checks (disable noImplicitReturns as it's causing the error)
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+
+    // Skip lib check for faster compilation
     "skipLibCheck": true,
-    "outDir": "dist"
-  }
+
+    // Disable these as they can cause issues with imports
+    "isolatedModules": false,
+    "noUncheckedSideEffectImports": false,
+
+    // React JSX if you have any React files in your server
+    "jsx": "react-jsx"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"]
 }
