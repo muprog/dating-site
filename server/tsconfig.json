@@ -11,7 +11,6 @@
     "noUncheckedIndexedAccess": true,
     "rootDir": "./src",
     "outDir": "./dist",
-    "typeRoots": ["./node_modules/@types"],
     "exactOptionalPropertyTypes": true,
 
     "strictNullChecks": true,
