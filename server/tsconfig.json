@@ -1,28 +1,39 @@
+// {
+//   "compilerOptions": {
+//     "module": "commonjs",
+//     "target": "esnext",
+//     "types": ["node"],
+
+//     "sourceMap": true,
+//     "declaration": true,
+//     "declarationMap": true,
+
+//     "noUncheckedIndexedAccess": true,
+//     "rootDir": "./src",
+//     "outDir": "./dist",
+//     "exactOptionalPropertyTypes": true,
+
+//     "strictNullChecks": true,
+//     "strict": true,
+//     "jsx": "react-jsx",
+//     // "verbatimModuleSyntax": true,
+//     "isolatedModules": true,
+//     "noUncheckedSideEffectImports": true,
+//     "skipLibCheck": true,
+//     "allowSyntheticDefaultImports": true
+//   },
+//   // "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+//   "include": ["src/**/*"],
+//   "exclude": ["node_modules", "dist"]
+// }
 {
   "compilerOptions": {
+    "target": "es2016",
     "module": "commonjs",
-    "target": "esnext",
-    "types": ["node"],
-
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
-
-    "noUncheckedIndexedAccess": true,
-    "rootDir": "./src",
-    "outDir": "./dist",
-    "exactOptionalPropertyTypes": true,
-
-    "strictNullChecks": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "jsx": "react-jsx",
-    // "verbatimModuleSyntax": true,
-    "isolatedModules": true,
-    "noUncheckedSideEffectImports": true,
     "skipLibCheck": true,
-    "allowSyntheticDefaultImports": true
-  },
-  // "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+    "outDir": "dist"
+  }
 }
